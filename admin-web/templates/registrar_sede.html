@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+    <a href="{{ url_for('gestionar_sedes') }}" class="btn btn-secondary" style="padding: 0.5rem; border-radius: 50%;">←</a>
+    <h1>Registrar Nueva Sede</h1>
+</div>
+
+<div class="card">
+    <form action="#" method="GET">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div class="form-group">
+                <label class="form-label">Nombre de la Sede</label>
+                <input type="text" class="form-control" placeholder="Ej. Cancha Principal UPQ">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Capacidad de Jugadores</label>
+                <select class="form-control">
+                    <option>11 vs 11</option>
+                    <option>7 vs 7</option>
+                    <option>5 vs 5</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="grid-column: span 2;">
+                <label class="form-label">Ubicación / Dirección</label>
+                <input type="text" class="form-control" placeholder="Ej. Av. Universidad, Zona Norte">
+            </div>
+            
+            <div class="form-group" style="grid-column: span 2;">
+                <label class="form-label">Subir Imagen de la Sede</label>
+                <div class="image-placeholder" style="height: 150px; cursor: pointer;">
+                    Hacer clic para subir imagen (JPG, PNG)
+                </div>
+            </div>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+            <a href="{{ url_for('gestionar_sedes') }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Guardar Sede</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+    <a href="{{ url_for('equipos_emparejamientos') }}" class="btn btn-secondary" style="padding: 0.5rem; border-radius: 50%;">←</a>
+    <h1>Aceptar Equipos para el Torneo</h1>
+</div>
+
+<div class="card">
+    <div style="margin-bottom: 1.5rem;">
+        <p style="color: var(--neutral);">Revisa las solicitudes de inscripción de los equipos antes de aceptarlos en el torneo.</p>
+    </div>
+
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Equipo</th>
+                    <th>Entrenador</th>
+                    <th>Jugadores</th>
+                    <th>Fecha Solicitud</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if solicitudes %}
+                    {% for sol in solicitudes %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div class="placeholder-avatar" style="width: 30px; height: 30px;"></div>
+                                <strong>{{ sol.equipo_nombre }}</strong>
+                            </div>
+                        </td>
+                        <td>{{ sol.entrenador_nombre }}</td>
+                        <td>{{ sol.jugadores_count }}</td>
+                        <td>{{ sol.fecha_solicitud }}</td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-primary" style="background-color: var(--success); padding: 0.25rem 0.75rem; font-size: 12px;">Aceptar</button>
+                                <button class="btn btn-primary" style="background-color: var(--error); padding: 0.25rem 0.75rem; font-size: 12px;">Rechazar</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--neutral); padding: 2rem;">Aún no hay registros creados</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

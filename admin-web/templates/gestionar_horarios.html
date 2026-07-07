@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>Gestionar Horarios de Partidos</h1>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <h2>Filtros</h2>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem;">
+        <select class="form-control">
+            <option>Torneo Primavera 2026</option>
+        </select>
+        <select class="form-control">
+            <option>Jornada 1</option>
+            <option>Jornada 2</option>
+        </select>
+        <select class="form-control">
+            <option>Cancha Principal UPQ</option>
+            <option>Cancha Sur</option>
+        </select>
+        <input type="date" class="form-control">
+    </div>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2>Partidos Programados</h2>
+        <button class="btn btn-primary">Asignar Árbitros Automáticamente</button>
+    </div>
+    
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Hora</th>
+                    <th>Encuentro</th>
+                    <th>Sede</th>
+                    <th>Árbitro Principal</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong style="font-size: 16px;">08:00 AM</strong><br><span style="font-size: 12px; color: var(--neutral);">Sáb, 15 May</span></td>
+                    <td>Los Halcones <br>vs<br> Tigres FC</td>
+                    <td>Cancha Principal UPQ</td>
+                    <td>
+                        <select class="form-control" style="padding: 0.25rem; font-size: 12px;">
+                            <option>Pendiente de Asignar</option>
+                            <option selected>José M. (Confirmado)</option>
+                            <option>Luis R. (Pendiente)</option>
+                        </select>
+                    </td>
+                    <td><button class="btn btn-secondary" style="font-size: 12px; padding: 0.25rem 0.75rem;">Guardar</button></td>
+                </tr>
+                <tr>
+                    <td><strong style="font-size: 16px;">10:00 AM</strong><br><span style="font-size: 12px; color: var(--neutral);">Sáb, 15 May</span></td>
+                    <td>Deportivo UPQ <br>vs<br> Lobos</td>
+                    <td>Cancha Sur</td>
+                    <td>
+                        <select class="form-control" style="padding: 0.25rem; font-size: 12px;">
+                            <option selected>Pendiente de Asignar</option>
+                            <option>José M.</option>
+                            <option>Luis R.</option>
+                        </select>
+                    </td>
+                    <td><button class="btn btn-secondary" style="font-size: 12px; padding: 0.25rem 0.75rem;">Guardar</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

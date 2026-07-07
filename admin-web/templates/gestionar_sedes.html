@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>Gestionar Sedes</h1>
+    <a href="{{ url_for('registrar_sede') }}" class="btn btn-primary">+ Nueva Sede</a>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+    
+    {% if sedes %}
+        {% for sede in sedes %}
+        <div class="card">
+            <div class="image-placeholder" style="height: 120px; margin-bottom: 1rem;">
+                [Foto {{ sede.nombre }}]
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h3 style="font-family: var(--font-title); font-size: 20px;">{{ sede.nombre }}</h3>
+                    <p style="color: var(--neutral); font-size: 14px;">{{ sede.direccion }}</p>
+                </div>
+                <span class="badge badge-{% if sede.activa %}success{% else %}warning{% endif %}">{% if sede.activa %}Activa{% else %}Inactiva{% endif %}</span>
+            </div>
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee; display: flex; justify-content: space-between;">
+                <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 12px;">Editar</button>
+                <button class="btn btn-disabled" style="padding: 0.5rem 1rem; font-size: 12px; background-color: var(--error);">Desactivar</button>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div style="grid-column: 1 / -1; text-align: center; color: var(--neutral); padding: 3rem;">Aún no hay registros creados</div>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>Equipos y Emparejamientos</h1>
+    <a href="{{ url_for('aceptar_equipos') }}" class="btn btn-secondary">Ver Solicitudes Pendientes</a>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2>Equipos Inscritos</h2>
+        <div style="display: flex; gap: 1rem;">
+            <select class="form-control" style="width: 200px;">
+                <option>Torneo Primavera 2026</option>
+            </select>
+        </div>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem;">
+        {% if equipos %}
+            {% for equipo in equipos %}
+            <div class="card card-accent" style="box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 0;">
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="placeholder-avatar"></div>
+                    <div>
+                        <h3 style="font-size: 18px;">{{ equipo.nombre }}</h3>
+                        <p style="font-size: 12px; color: var(--neutral);">Jugadores inscritos</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('gestionar_equipo') }}" class="btn btn-secondary" style="width: 100%; font-size: 12px; padding: 0.5rem;">Gestionar</a>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="grid-column: 1 / -1; text-align: center; color: var(--neutral); padding: 3rem;">Aún no hay registros creados</div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2>Generación de Emparejamientos</h2>
+        <button class="btn btn-primary">Generar Automáticamente</button>
+    </div>
+    
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Local</th>
+                    <th>Visitante</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if emparejamientos %}
+                    {% for match in emparejamientos %}
+                    <tr>
+                        <td>{{ match.local }}</td>
+                        <td>{{ match.visitante }}</td>
+                        <td><span class="badge badge-success">{{ match.estado }}</span></td>
+                        <td><button class="btn btn-secondary" style="font-size: 12px; padding: 0.25rem 0.75rem;">Editar</button></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--neutral); padding: 2rem;">Aún no hay registros creados</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

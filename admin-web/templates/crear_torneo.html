@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>Crear Torneo</h1>
+</div>
+
+<div class="card">
+    <h2>Información del Torneo</h2>
+    <form action="#" method="GET" style="margin-top: 1.5rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div class="form-group">
+                <label class="form-label">Nombre del Torneo</label>
+                <input type="text" class="form-control" placeholder="Ej. Torneo Primavera 2026">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Sede Principal</label>
+                <select class="form-control">
+                    <option>Seleccionar Sede</option>
+                    <option>Cancha Principal UPQ</option>
+                    <option>Cancha Sur</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Fecha de Inicio</label>
+                <input type="date" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Fecha de Fin</label>
+                <input type="date" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Categoría</label>
+                <select class="form-control">
+                    <option>Libre</option>
+                    <option>Femenil</option>
+                    <option>Veteranos</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Cupo de Equipos</label>
+                <input type="number" class="form-control" placeholder="Ej. 16">
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-top: 1rem;">
+            <label class="form-label">Reglas y Observaciones</label>
+            <textarea class="form-control" rows="4" placeholder="Escribe aquí las reglas adicionales..."></textarea>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Crear Torneo</button>
+        </div>
+    </form>
+</div>
+
+<div class="image-placeholder" style="margin-top: 2rem;">
+    [Espacio para Banner de Torneo (Opcional)]
+</div>
+{% endblock %}

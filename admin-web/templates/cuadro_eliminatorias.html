@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>Cuadro de Eliminatorias</h1>
+    <select class="form-control" style="width: 250px;">
+        <option>Torneo Primavera 2026</option>
+        <option>Torneo Invierno 2025</option>
+    </select>
+</div>
+
+<div class="card" style="min-height: 500px; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--background);">
+    <h3 style="color: var(--neutral); margin-bottom: 1rem;">Cuadro de Eliminatorias</h3>
+    <div class="image-placeholder" style="width: 100%; height: 400px; background-color: white; border: 1px solid #ccc;">
+        [Espacio para componente visual del Bracket / Diagrama de Llaves]
+        
+    </div>
+    
+    <div style="margin-top: 2rem; width: 100%; display: flex; justify-content: flex-end;">
+        <button class="btn btn-primary">Avanzar Siguiente Fase</button>
+    </div>
+</div>
+{% endblock %}

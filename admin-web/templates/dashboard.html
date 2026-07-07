@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>Dashboard Principal</h1>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <span style="font-weight: 500;">Admin User</span>
+        <div class="placeholder-avatar"></div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card card-accent">
+        <h3 style="color: var(--neutral); font-size: 14px; text-transform: uppercase;">Torneos Activos</h3>
+        <div class="score" style="color: var(--primary);">{{ torneos_activos|default(0) }}</div>
+    </div>
+    <div class="card card-accent-secondary">
+        <h3 style="color: var(--neutral); font-size: 14px; text-transform: uppercase;">Equipos Registrados</h3>
+        <div class="score" style="color: var(--secondary);">{{ equipos_registrados|default(0) }}</div>
+    </div>
+    <div class="card card-accent">
+        <h3 style="color: var(--neutral); font-size: 14px; text-transform: uppercase;">Partidos Hoy</h3>
+        <div class="score" style="color: var(--primary);">{{ partidos_hoy|default(0) }}</div>
+    </div>
+    <div class="card card-accent-secondary">
+        <h3 style="color: var(--neutral); font-size: 14px; text-transform: uppercase;">Árbitros Disponibles</h3>
+        <div class="score" style="color: var(--secondary);">{{ arbitros_disponibles|default(0) }}</div>
+    </div>
+</div>
+
+<h2>Actividad Reciente</h2>
+<div class="card">
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Actividad</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if actividades %}
+                    {% for act in actividades %}
+                        <tr>
+                            <td>{{ act.fecha }}</td>
+                            <td>{{ act.descripcion }}</td>
+                            <td><span class="badge badge-{{ act.color }}">{{ act.estado }}</span></td>
+                            <td><button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 12px;">Acción</button></td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--neutral); padding: 2rem;">Aún no hay registros creados</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="image-placeholder" style="margin-top: 2rem;">
+    [Espacio para Gráfica de Partidos o Ingresos]
+</div>
+{% endblock %}
