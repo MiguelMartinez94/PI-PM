@@ -1,61 +1,39 @@
-version: '3.8'
-
 services:
-  # --- 1. TUS APLICACIONES ---
   api-backend:
-    build: ./api-backend
-    expose:
-      - "8000"
+    build:
+      context: ./api-backend
+    ports:
+      - "8001:8000"
     environment:
       - DATABASE_URL=postgresql://neondb_owner:npg_j5GMCDdNE0Uu@ep-super-breeze-axu8gq3l-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    volumes:
+      - ./api-backend:/app
 
   admin-web:
-    build: ./admin-web
-    expose:
-      - "5000"
+    build:
+      context: ./admin-web
+    ports:
+      - "5001:5000"
     environment:
-      - FASTAPI_URL=http://haproxy_proxy:80
+      - FASTAPI_URL=http://api-backend:8000
       - FLASK_ENV=development
       - FLASK_DEBUG=1
-
-  mobile-app:
-    build: ./mobile-app
-    ports:
-      - "8081:8081"
-    environment:
-      - EXPO_USE_V2_RESOLVER=1
-      - REACT_NATIVE_PACKAGER_HOSTNAME=192.168.1.27
-
-  # --- 2. BALANCEADOR DE CARGA ---
-  haproxy_proxy:
-    image: haproxy:alpine
-    container_name: haproxy_proxy
-    restart: unless-stopped
+    volumes:
+      - ./admin-web:/app
     depends_on:
       - api-backend
-      - admin-web
-    ports:
-      - "80:80"     
-      - "8404:8404"
-      - "8405:8405"
-    volumes:
-      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
 
-  # --- 3. MONITOREO ---
-  prometheus:
-    image: prom/prometheus:latest
+  mobile-app:
+    build:
+      context: ./mobile-app
     ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3000:3000"
+      - "8082:8081"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    depends_on:
-      - prometheus
+      - EXPO_USE_V2_RESOLVER=1
+      - EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:8001
+      - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
     volumes:
-      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./mobile-app:/app
+      - /app/node_modules
+    depends_on:
+      - api-backend
