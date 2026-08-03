@@ -23,4 +23,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         raise HTTPException(status_code=400, detail="Usuario inactivo")
         
     access_token = create_access_token(data={"sub": user.correo, "rol_id": user.rol_id})
-    return {"access_token": access_token, "token_type": "bearer"}
+    rol_nombre = user.rol.nombre if user.rol else None
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "user_id": user.id,
+        "rol_id": user.rol_id,
+        "rol_nombre": rol_nombre
+    }

@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: pi_user
+      POSTGRES_PASSWORD: pi_pass
+      POSTGRES_DB: pi_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api-backend:
+    build:
+      context: ./api-backend
+    ports:
+      - "8001:8000"
+    environment:
+      - DATABASE_URL=postgresql://neondb_owner:npg_j5GMCDdNE0Uu@ep-super-breeze-axu8gq3l-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    volumes:
+      - ./api-backend:/app
+    depends_on:
+      - db
+
+  admin-web:
+    build:
+      context: ./admin-web
+    ports:
+      - "5001:5000"
+    environment:
+      - FASTAPI_URL=http://api-backend:8000
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    volumes:
+      - ./admin-web:/app
+    depends_on:
+      - api-backend
+
+  mobile-app:
+    build:
+      context: ./mobile-app
+    ports:
+      - "8081:8081"
+    environment:
+      - EXPO_USE_V2_RESOLVER=1
+      - REACT_NATIVE_PACKAGER_HOSTNAME=192.168.1.27
+    volumes:
+      - ./mobile-app:/app
+      - /app/node_modules
+    depends_on:
+      - api-backend
+
+volumes:
+  postgres_data:

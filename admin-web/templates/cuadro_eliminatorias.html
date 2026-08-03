@@ -1,23 +1,366 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>Cuadro de Eliminatorias</h1>
-    <select class="form-control" style="width: 250px;">
-        <option>Torneo Primavera 2026</option>
-        <option>Torneo Invierno 2025</option>
-    </select>
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+        color: var(--dark);
+        margin: 0;
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .panel {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        padding: 2rem;
+        overflow-x: auto;
+    }
+
+    
+    .bracket-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-width: 800px;
+        gap: 2rem;
+    }
+
+    .bracket-round {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        gap: 2rem;
+        flex: 1;
+    }
+
+    .round-title {
+        text-align: center;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 1.5rem;
+    }
+
+    .matchup {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .matchup:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-color: var(--primary);
+    }
+
+    
+    .bracket-round:not(:last-child) .matchup::after {
+        content: '';
+        position: absolute;
+        right: -1rem;
+        top: 50%;
+        width: 1rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .bracket-round:not(:first-child) .matchup::before {
+        content: '';
+        position: absolute;
+        left: -1rem;
+        top: 50%;
+        width: 1rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    
+    .bracket-round.semifinals .matchup::after {
+        right: -1rem;
+        width: 1rem;
+    }
+    
+    .team-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+    }
+
+    .team-row:first-child {
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .team-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .team-logo {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--background);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .team-name {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--dark);
+    }
+
+    .team-score {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--dark);
+        width: 30px;
+        text-align: right;
+    }
+
+    .team-row.winner .team-name, .team-row.winner .team-score {
+        color: var(--primary);
+    }
+    
+    .team-row.loser {
+        opacity: 0.6;
+    }
+
+    .match-status {
+        position: absolute;
+        top: -10px;
+        right: 10px;
+        background: var(--primary);
+        color: white;
+        font-size: 0.6rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    
+    .match-status.finished {
+        background: var(--text-muted);
+    }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">Cuadro de Eliminatorias</h1>
+    <div style="display:flex; gap:1rem; align-items:center;">
+        <select class="form-control" style="width: 250px; padding: 0.6rem; border: 1px solid #e5e7eb; border-radius: 8px;" id="torneoSelect" onchange="window.location.href='?torneo_id=' + this.value;">
+            <option value="">Seleccione un Torneo...</option>
+            {% for t in torneos %}
+                <option value="{{ t.id }}" {% if current_torneo|string == t.id|string %}selected{% endif %}>{{ t.nombre }}</option>
+            {% endfor %}
+        </select>
+        <button class="btn-secondary" onclick="generarLlaves()">
+            <i class="ri-settings-4-line"></i> Generar Llaves
+        </button>
+        <button class="btn-primary" onclick="exportarPDF()">
+            <i class="ri-file-pdf-line"></i> Exportar Cuadro a PDF
+        </button>
+    </div>
 </div>
 
-<div class="card" style="min-height: 500px; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--background);">
-    <h3 style="color: var(--neutral); margin-bottom: 1rem;">Cuadro de Eliminatorias</h3>
-    <div class="image-placeholder" style="width: 100%; height: 400px; background-color: white; border: 1px solid #ccc;">
-        [Espacio para componente visual del Bracket / Diagrama de Llaves]
+<div class="panel">
+    <div class="bracket-container">
+        
+        
+        <div class="bracket-round quarterfinals">
+            <h3 class="round-title">Cuartos de Final</h3>
+            
+            <div class="matchup">
+                <div class="match-status finished">FINALIZADO</div>
+                <div class="team-row winner">
+                    <div class="team-info">
+                        <div class="team-logo">RM</div>
+                        <span class="team-name">Real Madrid</span>
+                    </div>
+                    <span class="team-score">3</span>
+                </div>
+                <div class="team-row loser">
+                    <div class="team-info">
+                        <div class="team-logo">JUV</div>
+                        <span class="team-name">Juventus</span>
+                    </div>
+                    <span class="team-score">1</span>
+                </div>
+            </div>
+
+            <div class="matchup">
+                <div class="match-status finished">FINALIZADO</div>
+                <div class="team-row loser">
+                    <div class="team-info">
+                        <div class="team-logo">CHE</div>
+                        <span class="team-name">Chelsea</span>
+                    </div>
+                    <span class="team-score">0</span>
+                </div>
+                <div class="team-row winner">
+                    <div class="team-info">
+                        <div class="team-logo">LIV</div>
+                        <span class="team-name">Liverpool</span>
+                    </div>
+                    <span class="team-score">2</span>
+                </div>
+            </div>
+            
+            <div class="matchup">
+                <div class="match-status finished">FINALIZADO</div>
+                <div class="team-row winner">
+                    <div class="team-info">
+                        <div class="team-logo">BAY</div>
+                        <span class="team-name">Bayern</span>
+                    </div>
+                    <span class="team-score">4</span>
+                </div>
+                <div class="team-row loser">
+                    <div class="team-info">
+                        <div class="team-logo">DOR</div>
+                        <span class="team-name">Dortmund</span>
+                    </div>
+                    <span class="team-score">2</span>
+                </div>
+            </div>
+
+            <div class="matchup">
+                <div class="match-status finished">FINALIZADO</div>
+                <div class="team-row loser">
+                    <div class="team-info">
+                        <div class="team-logo">PSG</div>
+                        <span class="team-name">PSG</span>
+                    </div>
+                    <span class="team-score">1</span>
+                </div>
+                <div class="team-row winner">
+                    <div class="team-info">
+                        <div class="team-logo">FCB</div>
+                        <span class="team-name">Barcelona</span>
+                    </div>
+                    <span class="team-score">2</span>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="bracket-round semifinals">
+            <h3 class="round-title">Semifinales</h3>
+            
+            <div class="matchup">
+                <div class="match-status">EN CURSO</div>
+                <div class="team-row">
+                    <div class="team-info">
+                        <div class="team-logo">RM</div>
+                        <span class="team-name">Real Madrid</span>
+                    </div>
+                    <span class="team-score">1</span>
+                </div>
+                <div class="team-row">
+                    <div class="team-info">
+                        <div class="team-logo">LIV</div>
+                        <span class="team-name">Liverpool</span>
+                    </div>
+                    <span class="team-score">1</span>
+                </div>
+            </div>
+
+            <div class="matchup" style="margin-top:2rem;">
+                <div class="match-status" style="background:#f59e0b;">HOY 20:00</div>
+                <div class="team-row">
+                    <div class="team-info">
+                        <div class="team-logo">BAY</div>
+                        <span class="team-name">Bayern</span>
+                    </div>
+                    <span class="team-score">-</span>
+                </div>
+                <div class="team-row">
+                    <div class="team-info">
+                        <div class="team-logo">FCB</div>
+                        <span class="team-name">Barcelona</span>
+                    </div>
+                    <span class="team-score">-</span>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="bracket-round finals">
+            <h3 class="round-title">Gran Final</h3>
+            
+            <div class="matchup" style="transform: scale(1.1); margin: 0 1rem; border-color: var(--primary);">
+                <div class="match-status" style="background:#f59e0b;">POR DEFINIR</div>
+                <div class="team-row">
+                    <div class="team-info">
+                        <div class="team-logo">?</div>
+                        <span class="team-name">Ganador Semi 1</span>
+                    </div>
+                    <span class="team-score">-</span>
+                </div>
+                <div class="team-row">
+                    <div class="team-info">
+                        <div class="team-logo">?</div>
+                        <span class="team-name">Ganador Semi 2</span>
+                    </div>
+                    <span class="team-score">-</span>
+                </div>
+            </div>
+        </div>
+        
         
     </div>
-    
-    <div style="margin-top: 2rem; width: 100%; display: flex; justify-content: flex-end;">
-        <button class="btn btn-primary">Avanzar Siguiente Fase</button>
-    </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    function generarLlaves() {
+        const torneoId = document.getElementById('torneoSelect').value;
+        if (!torneoId) {
+            alert('Seleccione un torneo para generar llaves.');
+            return;
+        }
+        alert("Generando llaves desde grupos...");
+        // Call backend logic here
+    }
+
+    function exportarPDF() {
+        const element = document.querySelector('.bracket-container');
+        const opt = {
+            margin:       0.5,
+            filename:     'cuadro_eliminatorias.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+</script>
 {% endblock %}

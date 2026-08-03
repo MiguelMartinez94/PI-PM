@@ -3,30 +3,48 @@
 {% block content %}
 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
     <div style="display: flex; align-items: center; gap: 1rem;">
-        <a href="{{ url_for('equipos_emparejamientos') }}" class="btn btn-secondary" style="padding: 0.5rem; border-radius: 50%;">←</a>
-        <h1>Gestionar Equipo: Los Halcones</h1>
+        <a href="{{ url_for('torneos_bp.equipos_emparejamientos') }}" class="btn btn-secondary" style="padding: 0.5rem; border-radius: 50%;">←</a>
+        <h1>Gestionar Equipo: {{ equipo.nombre }}</h1>
     </div>
-    <span class="badge badge-success" style="font-size: 14px; padding: 0.5rem 1rem;">Aceptado</span>
+    <span class="badge badge-success" style="font-size: 14px; padding: 0.5rem 1rem;">{{ equipo.estado | default('Activo') }}</span>
 </div>
 
 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
     
     <div>
         <div class="card" style="text-align: center;">
-            <div class="placeholder-avatar" style="width: 100px; height: 100px; margin-bottom: 1rem;"></div>
-            <h2>Los Halcones</h2>
-            <p style="color: var(--neutral); margin-bottom: 1rem;">Entrenador: Juan Pérez</p>
-            <p style="font-size: 14px; margin-bottom: 0.5rem;"><strong>Torneo:</strong> Torneo Primavera 2026</p>
-            <p style="font-size: 14px; margin-bottom: 1.5rem;"><strong>Registro:</strong> 10 May 2026</p>
+            <div class="placeholder-avatar" style="width: 100px; height: 100px; margin-bottom: 1rem; border-radius: 50%; overflow: hidden; display: inline-block;">
+                {% if equipo.logo_url %}
+                    <img src="{{ equipo.logo_url }}" style="width:100%; height:100%;">
+                {% else %}
+                    <div style="width:100%; height:100%; background:#ccc; display:flex; align-items:center; justify-content:center; color:white; font-size:2rem; font-weight:bold;">{{ equipo.nombre[:2]|upper }}</div>
+                {% endif %}
+            </div>
+            <h2>{{ equipo.nombre }}</h2>
+            <p style="color: var(--neutral); margin-bottom: 1rem;">Entrenador: {{ equipo.entrenador_nombre | default('Sin asignar') }}</p>
+            <p style="font-size: 14px; margin-bottom: 0.5rem;"><strong>Categoría:</strong> {{ equipo.categoria_nombre | default('Libre') }}</p>
+            <p style="font-size: 14px; margin-bottom: 1.5rem;"><strong>Registro:</strong> {{ equipo.fecha_creacion }}</p>
             
             <button class="btn btn-secondary" style="width: 100%; margin-bottom: 0.5rem;">Contactar Entrenador</button>
             <button class="btn btn-disabled" style="width: 100%; background-color: var(--error);">Dar de Baja</button>
+        </div>
+        
+        <div class="card" style="margin-top: 1.5rem;">
+            <h3>Estadísticas Generales</h3>
+            <ul style="list-style: none; padding: 0; margin-top: 1rem;">
+                <li style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><span>Partidos Jugados</span> <strong>{{ equipo.estadisticas.partidos_jugados | default(0) }}</strong></li>
+                <li style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><span>Ganados</span> <strong style="color:var(--success);">{{ equipo.estadisticas.ganados | default(0) }}</strong></li>
+                <li style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><span>Empatados</span> <strong style="color:var(--warning);">{{ equipo.estadisticas.empatados | default(0) }}</strong></li>
+                <li style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><span>Perdidos</span> <strong style="color:var(--error);">{{ equipo.estadisticas.perdidos | default(0) }}</strong></li>
+                <li style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><span>Goles a Favor</span> <strong>{{ equipo.estadisticas.goles_favor | default(0) }}</strong></li>
+                <li style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><span>Goles en Contra</span> <strong>{{ equipo.estadisticas.goles_contra | default(0) }}</strong></li>
+            </ul>
         </div>
     </div>
 
     
     <div>
-        <div class="card">
+        <div class="card" style="margin-bottom: 1.5rem;">
             <h2 style="margin-bottom: 1.5rem;">Plantilla de Jugadores</h2>
             <div class="table-container">
                 <table class="table">
@@ -42,15 +60,75 @@
                         {% if jugadores %}
                             {% for jugador in jugadores %}
                             <tr>
-                                <td>{{ jugador.dorsal }}</td>
+                                <td>{{ jugador.dorsal | default('-') }}</td>
                                 <td>{{ jugador.nombre }}</td>
-                                <td>{{ jugador.posicion }}</td>
-                                <td><span class="badge badge-success">{{ jugador.estado }}</span></td>
+                                <td>{{ jugador.posicion | default('-') }}</td>
+                                <td><span class="badge badge-success">{{ jugador.estado | default('Activo') }}</span></td>
                             </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
                                 <td colspan="4" style="text-align: center; color: var(--neutral); padding: 2rem;">Aún no hay jugadores registrados</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <h2 style="margin-bottom: 1.5rem;">Historial de Partidos</h2>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Rival</th>
+                            <th>Resultado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if equipo.historial_partidos %}
+                            {% for partido in equipo.historial_partidos %}
+                            <tr>
+                                <td>{{ partido.fecha }}</td>
+                                <td>{{ partido.rival }}</td>
+                                <td><strong>{{ partido.resultado }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: var(--neutral); padding: 1rem;">No hay partidos registrados.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-bottom: 1.5rem;">Sanciones Activas</h2>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Jugador</th>
+                            <th>Motivo</th>
+                            <th>Partidos de Suspensión</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if equipo.sanciones %}
+                            {% for sancion in equipo.sanciones %}
+                            <tr>
+                                <td>{{ sancion.jugador_nombre }}</td>
+                                <td>{{ sancion.motivo }}</td>
+                                <td><span class="badge badge-error" style="background-color: var(--error);">{{ sancion.partidos }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: var(--neutral); padding: 1rem;">No hay sanciones activas.</td>
                             </tr>
                         {% endif %}
                     </tbody>

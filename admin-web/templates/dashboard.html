@@ -1,66 +1,401 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>Dashboard Principal</h1>
-    <div style="display: flex; align-items: center; gap: 1rem;">
-        <span style="font-weight: 500;">Admin User</span>
-        <div class="placeholder-avatar"></div>
+<style>
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 1.75rem;
+        color: var(--dark);
+        margin: 0;
+    }
+
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background-color: var(--primary);
+        color: white;
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: background-color 0.2s;
+    }
+    
+    .btn-action:hover {
+        background-color: var(--primary-hover);
+        color: white;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .stat-title {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .icon-wine { background: rgba(114, 47, 55, 0.1); color: var(--primary); }
+    .icon-blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .icon-green { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .icon-orange { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-trend {
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .trend-up { color: #10b981; }
+    .trend-down { color: #ef4444; }
+    .trend-neutral { color: var(--text-muted); }
+
+    .dashboard-layout {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .panel {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .panel-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--dark);
+    }
+
+    .panel-link {
+        color: var(--primary);
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .panel-link:hover {
+        text-decoration: underline;
+    }
+
+    
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table th {
+        text-align: left;
+        padding: 0.75rem 1rem;
+        color: var(--text-muted);
+        font-weight: 500;
+        font-size: 0.875rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .data-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        font-size: 0.875rem;
+    }
+
+    .data-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .badge-primary { background: rgba(114, 47, 55, 0.1); color: var(--primary); }
+    .badge-success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .badge-warning { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+
+    
+    .tournament-item {
+        margin-bottom: 1.5rem;
+    }
+    
+    .tournament-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .tournament-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+
+    .tournament-name {
+        font-weight: 500;
+        color: var(--dark);
+    }
+
+    .tournament-teams {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+
+    .progress-bar-bg {
+        height: 8px;
+        background-color: var(--background);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background-color: var(--primary);
+        border-radius: 4px;
+    }
+
+    .tournament-status {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    
+    .alert-item {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 8px;
+        background-color: #fffbeb;
+        border: 1px solid #fde68a;
+        margin-bottom: 1rem;
+    }
+
+    .alert-icon {
+        color: #d97706;
+        font-size: 1.25rem;
+    }
+
+    .alert-content p {
+        margin: 0 0 0.5rem 0;
+        font-size: 0.875rem;
+        color: var(--dark);
+    }
+
+    .btn-small {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        border: none;
+        border-radius: 4px;
+        background-color: var(--primary);
+        color: white;
+        cursor: pointer;
+    }
+
+    @media (max-width: 1024px) {
+        .dashboard-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="dashboard-header">
+    <h1>¡Hola, Administrador!</h1>
+</div>
+
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Sedes Activas</span>
+            <div class="stat-icon icon-wine"><i class="ri-map-pin-line"></i></div>
+        </div>
+        <div class="stat-value">{{ sedes_activas }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Torneos en Curso</span>
+            <div class="stat-icon icon-blue"><i class="ri-trophy-line"></i></div>
+        </div>
+        <div class="stat-value">{{ torneos_activos }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Equipos Registrados</span>
+            <div class="stat-icon icon-green"><i class="ri-team-line"></i></div>
+        </div>
+        <div class="stat-value">{{ equipos_registrados }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Total de Partidos</span>
+            <div class="stat-icon icon-orange"><i class="ri-calendar-event-line"></i></div>
+        </div>
+        <div class="stat-value">{{ partidos_hoy }}</div>
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-    <div class="card card-accent">
-        <h3 style="color: var(--neutral); font-size: 14px; text-transform: uppercase;">Torneos Activos</h3>
-        <div class="score" style="color: var(--primary);">{{ torneos_activos|default(0) }}</div>
-    </div>
-    <div class="card card-accent-secondary">
-        <h3 style="color: var(--neutral); font-size: 14px; text-transform: uppercase;">Equipos Registrados</h3>
-        <div class="score" style="color: var(--secondary);">{{ equipos_registrados|default(0) }}</div>
-    </div>
-    <div class="card card-accent">
-        <h3 style="color: var(--neutral); font-size: 14px; text-transform: uppercase;">Partidos Hoy</h3>
-        <div class="score" style="color: var(--primary);">{{ partidos_hoy|default(0) }}</div>
-    </div>
-    <div class="card card-accent-secondary">
-        <h3 style="color: var(--neutral); font-size: 14px; text-transform: uppercase;">Árbitros Disponibles</h3>
-        <div class="score" style="color: var(--secondary);">{{ arbitros_disponibles|default(0) }}</div>
-    </div>
-</div>
-
-<h2>Actividad Reciente</h2>
-<div class="card">
-    <div class="table-container">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Actividad</th>
-                    <th>Estado</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if actividades %}
-                    {% for act in actividades %}
-                        <tr>
-                            <td>{{ act.fecha }}</td>
-                            <td>{{ act.descripcion }}</td>
-                            <td><span class="badge badge-{{ act.color }}">{{ act.estado }}</span></td>
-                            <td><button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 12px;">Acción</button></td>
-                        </tr>
-                    {% endfor %}
-                {% else %}
+<div class="dashboard-layout">
+    
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Próximos Partidos del Día</h2>
+                <a href="/horarios" class="panel-link">Ver todos</a>
+            </div>
+            <table class="data-table">
+                <thead>
                     <tr>
-                        <td colspan="4" style="text-align: center; color: var(--neutral); padding: 2rem;">Aún no hay registros creados</td>
+                        <th>Hora</th>
+                        <th>Equipos</th>
+                        
                     </tr>
-                {% endif %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% if actividades %}
+                        {% for partido in actividades %}
+                        <tr>
+                            <td>{{ partido.fecha_hora }}</td>
+                            <td><span style="font-weight: 500;">{{ partido.local }}</span> vs <span style="font-weight: 500;">{{ partido.visita }}</span></td>
+                            
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align: center;">No hay partidos programados</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Partidos por Semana</h2>
+            </div>
+            <canvas id="partidosChart" height="100"></canvas>
+        </div>
+    </div>
+
+    
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Torneos Activos</h2>
+                
+            </div>
+            
+            {% if lista_torneos_activos %}
+                {% for torneo in lista_torneos_activos %}
+                <div class="tournament-item">
+                    <div class="tournament-info">
+                        <span class="tournament-name">{{ torneo.nombre }}</span>
+                        <span class="tournament-teams">{{ torneo.equipos }} equipos • {{ torneo.sede }}</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width: 50%;"></div>
+                    </div>
+                    <span class="tournament-status">{{ torneo.estado|capitalize }} • {{ torneo.fecha_inicio }} → {{ torneo.fecha_fin }}</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="text-align: center; color: var(--text-muted); margin-top: 1rem;">No hay torneos activos</p>
+            {% endif %}
+        </div>
     </div>
 </div>
 
-<div class="image-placeholder" style="margin-top: 2rem;">
-    [Espacio para Gráfica de Partidos o Ingresos]
-</div>
+<script>
+    const ctx = document.getElementById('partidosChart').getContext('2d');
+    const chartData = {{ grafica_partidos | tojson }};
+    const labels = chartData.map(d => d.semana);
+    const dataValues = chartData.map(d => d.partidos);
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Partidos',
+                data: dataValues,
+                backgroundColor: 'rgba(114, 47, 55, 0.7)',
+                borderColor: 'rgba(114, 47, 55, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+
 {% endblock %}

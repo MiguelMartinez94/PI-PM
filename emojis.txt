@@ -1,0 +1,9 @@
+admin-web\templates\detalles_torneo.html:499 let arb1 = m1.arbitro && m1.arbitro !== 'Sin árbitro' ? `<div style="font-size:0.75rem; color:var(--text-muted); padding:0.2rem 0.5rem;">🧑‍⚖️ ${m1.arbitro}</div>` : '';
+admin-web\templates\detalles_torneo.html:510 let arb2 = m2.arbitro && m2.arbitro !== 'Sin árbitro' ? `<div style="font-size:0.75rem; color:var(--text-muted); padding:0.2rem 0.5rem;">🧑‍⚖️ ${m2.arbitro}</div>` : '';
+admin-web\templates\detalles_torneo.html:529 <div class="bracket-team" style="color:var(--primary-color); font-weight:bold;">🏆 CAMPEÓN</div>
+admin-web\templates\equipos_emparejamientos.html:665 let arb1 = m1.arbitro ? `<div style="font-size:0.75rem; color:var(--text-muted); padding:0.2rem 0.5rem;">🧑‍⚖️ ${m1.arbitro}</div>` : '';
+admin-web\templates\equipos_emparejamientos.html:676 let arb2 = m2.arbitro ? `<div style="font-size:0.75rem; color:var(--text-muted); padding:0.2rem 0.5rem;">🧑‍⚖️ ${m2.arbitro}</div>` : '';
+admin-web\templates\equipos_emparejamientos.html:696 <div class="bracket-team" style="color:var(--primary-color); font-weight:bold;">🏆 CAMPEÓN</div>
+admin-web\templates\tabla_clasificacion.html:551 let arb1 = m1.arbitro && m1.arbitro !== 'Sin árbitro' ? `<div style="font-size:0.75rem; color:var(--text-muted); padding:0.2rem 0.5rem;">🧑‍⚖️ ${m1.arbitro}</div>` : '';
+admin-web\templates\tabla_clasificacion.html:562 let arb2 = m2.arbitro && m2.arbitro !== 'Sin árbitro' ? `<div style="font-size:0.75rem; color:var(--text-muted); padding:0.2rem 0.5rem;">🧑‍⚖️ ${m2.arbitro}</div>` : '';
+admin-web\templates\tabla_clasificacion.html:581 <div class="bracket-team" style="color:var(--primary-color); font-weight:bold;">🏆 CAMPEÓN</div>

@@ -1,0 +1,207 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres-lab
+    environment:
+      POSTGRES_DB: project
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_lab_data:/var/lib/postgresql
+      - ./postgres/backup.sql:/docker-entrypoint-initdb.d/database.sql
+    networks: [labnet]
+    restart: unless-stopped
+
+  laravel1:
+    build: ./laravel
+    container_name: laravel-lab1
+    working_dir: /var/www
+    volumes:
+      - ./src/laravel_project:/var/www
+    depends_on: [postgres]
+    networks: [labnet]
+    restart: unless-stopped
+  
+  laravel2:
+    build: ./laravel
+    container_name: laravel-lab2
+    working_dir: /var/www
+    volumes:
+      - ./src/laravel_project:/var/www
+    depends_on: [postgres]
+    networks: [labnet]
+    restart: unless-stopped
+
+  flask1:
+    build: ./flask
+    container_name: flask-lab1
+    working_dir: /app
+    volumes:
+      - ./src/flask_project:/app
+    environment:
+      FLASK_ENV: development
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: admin
+      DB_PASS: password123
+      DB_NAME: project
+    depends_on: [postgres]
+    networks: [labnet]
+    restart: unless-stopped
+  
+  flask2:
+    build: ./flask
+    container_name: flask-lab2
+    working_dir: /app
+    volumes:
+      - ./src/flask_project:/app
+    environment:
+      FLASK_ENV: development
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: admin
+      DB_PASS: password123
+      DB_NAME: project
+    depends_on: [postgres]
+    networks: [labnet]
+    restart: unless-stopped
+
+  api1:
+    build: ./api
+    container_name: api-lab1
+    working_dir: /app
+    volumes:
+      - ./src/API_LAB:/app
+    environment:
+      API_KEYS: "admin:MASTER999,profesor:TEACHER111"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: admin
+      DB_PASS: password123
+      DB_NAME: project
+    depends_on: [postgres]
+    networks: [labnet]
+    restart: unless-stopped
+  
+  api2:
+    build: ./api
+    container_name: api-lab2
+    working_dir: /app
+    volumes:
+      - ./src/API_LAB:/app
+    environment:
+      API_KEYS: "admin:MASTER999,profesor:TEACHER111"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: admin
+      DB_PASS: password123
+      DB_NAME: project
+    depends_on: [postgres]
+    networks: [labnet]
+    restart: unless-stopped
+
+  haproxy:
+    image: haproxy:2.9
+    container_name: haproxy-lab
+    ports:
+      - "80:80"
+      - "5000:5000"
+      - "8000:8000" 
+      - "8404:8404"
+      - "8405:8405"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - laravel1
+      - laravel2
+      - flask1
+      - flask2
+      - api1
+      - api2
+    networks: [labnet]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-lab
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    depends_on:
+      - cadvisor
+      - postgres-exporter
+      - haproxy
+    networks: [labnet]
+    restart: unless-stopped
+
+  grafana:
+      image: grafana/grafana:latest
+      container_name: grafana-lab
+      ports:
+        - "3000:3000"
+      environment:
+        GF_SECURITY_ADMIN_USER: admin
+        GF_SECURITY_ADMIN_PASSWORD: admin123
+      volumes:
+        - grafana_data:/var/lib/grafana
+      depends_on:
+        - prometheus
+      networks: [labnet]
+      restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor-lab
+    ports:
+      - "8080:8080"
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    networks: [labnet]
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter-lab
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://admin:password123@postgres:5432/project?sslmode=disable"
+    depends_on:
+      - postgres
+    networks: [labnet]
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter-lab
+    ports:
+      - "9100:9100"
+    command:
+      - "--path.rootfs=/host"
+    volumes:
+      - /:/host:ro
+    networks: [labnet]
+    restart: unless-stopped
+
+volumes:
+  postgres_lab_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  labnet:

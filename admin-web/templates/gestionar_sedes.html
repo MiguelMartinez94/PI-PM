@@ -1,35 +1,447 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>Gestionar Sedes</h1>
-    <a href="{{ url_for('registrar_sede') }}" class="btn btn-primary">+ Nueva Sede</a>
-</div>
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
 
-<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+    .page-title {
+        font-size: 1.5rem;
+        color: var(--dark);
+        margin: 0;
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .panel {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table th, .data-table td {
+        padding: 1rem 1.5rem;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .data-table th {
+        background-color: #f9fafb;
+        color: var(--text-muted);
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+
+    .data-table td {
+        color: var(--dark);
+        font-size: 0.875rem;
+    }
+
+    .sede-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .sede-img {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        object-fit: cover;
+    }
+
     
-    {% if sedes %}
-        {% for sede in sedes %}
-        <div class="card">
-            <div class="image-placeholder" style="height: 120px; margin-bottom: 1rem;">
-                [Foto {{ sede.nombre }}]
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div>
-                    <h3 style="font-family: var(--font-title); font-size: 20px;">{{ sede.nombre }}</h3>
-                    <p style="color: var(--neutral); font-size: 14px;">{{ sede.direccion }}</p>
-                </div>
-                <span class="badge badge-{% if sede.activa %}success{% else %}warning{% endif %}">{% if sede.activa %}Activa{% else %}Inactiva{% endif %}</span>
-            </div>
-            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee; display: flex; justify-content: space-between;">
-                <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 12px;">Editar</button>
-                <button class="btn btn-disabled" style="padding: 0.5rem 1rem; font-size: 12px; background-color: var(--error);">Desactivar</button>
-            </div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div style="grid-column: 1 / -1; text-align: center; color: var(--neutral); padding: 3rem;">Aún no hay registros creados</div>
-    {% endif %}
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+    }
 
+    .switch input { 
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 34px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: #10b981;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(20px);
+    }
+
+    
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+
+    .modal-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 500px;
+        padding: 2rem;
+        transform: translateY(-20px);
+        transition: transform 0.3s;
+    }
+
+    .modal-overlay.active .modal-content {
+        transform: translateY(0);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--dark);
+    }
+
+    .btn-close {
+        background: transparent;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--text-muted);
+        cursor: pointer;
+    }
+
+    
+    .drop-zone {
+        border: 2px dashed #e5e7eb;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.2s, background-color 0.2s;
+        margin-bottom: 1.5rem;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: var(--primary);
+        background-color: rgba(114, 47, 55, 0.05);
+    }
+
+    .drop-zone-icon {
+        font-size: 2rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    .drop-zone-text {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 0.875rem;
+    }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">Gestión de Sedes</h1>
+    <button class="btn-primary" onclick="openModal()">
+        <i class="ri-add-line"></i> Nueva Sede
+    </button>
 </div>
+
+<div class="panel">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Sede</th>
+                <th>Dirección</th>
+                <th>Estatus</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if sedes %}
+                {% for sede in sedes %}
+                <tr>
+                    <td>
+                        <div class="sede-info">
+                            {% if sede.foto_url %}
+                                <img src="http://localhost:8001{{ sede.foto_url }}" class="sede-img" alt="Sede">
+                            {% else %}
+                                <img src="https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&q=80&w=100&h=100" class="sede-img" alt="Sede">
+                            {% endif %}
+                            <div>
+                                <strong>{{ sede.nombre }}</strong><br>
+                                <span style="color: var(--text-muted); font-size: 0.75rem;">Sede</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ sede.direccion }}</td>
+                    <td>
+                        <form action="{{ url_for('sedes_bp.toggle_sede', sede_id=sede.id) }}" method="POST" style="display:inline;">
+                            <label class="switch">
+                                <input type="checkbox" onchange="this.form.submit()" {% if sede.activa %}checked{% endif %}>
+                                <span class="slider"></span>
+                            </label>
+                        </form>
+                    </td>
+                    <td>
+                        <button type="button" 
+                                data-id="{{ sede.id }}"
+                                data-nombre="{{ sede.nombre }}"
+                                data-direccion="{{ sede.direccion }}"
+                                data-telefono="{{ sede.telefono or '' }}"
+                                data-ciudad="{{ sede.ciudad or '' }}"
+                                data-canchas="{{ sede.cantidad_canchas or 1 }}"
+                                data-apertura="{{ (sede.horario_apertura|string)[:5] if sede.horario_apertura else '' }}"
+                                data-cierre="{{ (sede.horario_cierre|string)[:5] if sede.horario_cierre else '' }}"
+                                data-amenidades="{{ sede.amenidades or '' }}"
+                                onclick="openEditModalFromBtn(this)" 
+                                style="background:none; border:none; color:var(--primary); cursor:pointer;"><i class="ri-edit-line"></i></button>
+                        <form action="{{ url_for('sedes_bp.eliminar_sede', sede_id=sede.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar esta sede?');">
+                            <button type="submit" style="background:none; border:none; color:#ef4444; cursor:pointer; margin-left: 0.5rem;"><i class="ri-delete-bin-line"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: var(--text-muted);">No hay sedes registradas</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+
+<div class="modal-overlay" id="sedeModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modalTitle">Agregar Nueva Sede</h2>
+            <button class="btn-close" onclick="closeModal()"><i class="ri-close-line"></i></button>
+        </div>
+        <form id="sedeForm" action="{{ url_for('sedes_bp.registrar_sede') }}" method="POST" enctype="multipart/form-data">
+            <input type="file" id="fileInput" name="foto" style="display: none;" accept="image/png, image/jpeg, image/svg+xml, image/gif">
+            <div class="drop-zone" id="dropZone">
+                <i class="ri-image-add-line drop-zone-icon" id="dropZoneIcon"></i>
+                <div class="drop-zone-text" id="dropZoneText">Arrastra y suelta la foto de la sede aquí<br>o haz clic para explorar (SVG, PNG, JPG)</div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Nombre de la Sede</label>
+                    <input type="text" name="nombre" id="nombreInput" class="form-control" placeholder="Ej. Estadio Central" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Teléfono de contacto</label>
+                    <input type="text" name="telefono" id="telefonoInput" class="form-control" placeholder="Ej. 4421234567" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Dirección Completa</label>
+                    <input type="text" name="direccion" id="direccionInput" class="form-control" placeholder="Ej. Av. Deportiva #123" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ciudad / Estado</label>
+                    <input type="text" name="ciudad" id="ciudadInput" class="form-control" placeholder="Ej. Querétaro" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Canchas/Campos</label>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <button type="button" class="btn-primary" style="padding: 0.5rem; background: var(--background); color: var(--dark); border: 1px solid #e5e7eb;" onclick="changeCanchas(-1)">-</button>
+                        <input type="number" name="cantidad_canchas" id="canchasInput" class="form-control" value="1" min="1" style="text-align: center;">
+                        <button type="button" class="btn-primary" style="padding: 0.5rem; background: var(--background); color: var(--dark); border: 1px solid #e5e7eb;" onclick="changeCanchas(1)">+</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hora de Apertura</label>
+                    <input type="time" name="horario_apertura" id="aperturaInput" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hora de Cierre</label>
+                    <input type="time" name="horario_cierre" id="cierreInput" class="form-control" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Descripción y Amenidades</label>
+                <textarea name="amenidades" id="amenidadesInput" class="form-control" rows="3" placeholder="Ej. Estacionamiento disponible, césped sintético, baños..." required></textarea>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                <button type="button" class="btn-primary" style="background: white; color: var(--dark); border: 1px solid #e5e7eb;" onclick="closeModal()">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar Sede</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal() {
+        document.getElementById('sedeForm').action = "{{ url_for('sedes_bp.registrar_sede') }}";
+        document.getElementById('modalTitle').innerText = "Agregar Nueva Sede";
+        document.getElementById('sedeForm').reset();
+        resetDropZone();
+        document.getElementById('sedeModal').classList.add('active');
+    }
+    
+    function openEditModalFromBtn(btn) {
+        const id = btn.getAttribute('data-id');
+        document.getElementById('sedeForm').action = "/sedes/" + id + "/editar";
+        document.getElementById('modalTitle').innerText = "Editar Sede";
+        
+        document.getElementById('nombreInput').value = btn.getAttribute('data-nombre');
+        document.getElementById('direccionInput').value = btn.getAttribute('data-direccion');
+        document.getElementById('telefonoInput').value = btn.getAttribute('data-telefono');
+        document.getElementById('ciudadInput').value = btn.getAttribute('data-ciudad');
+        document.getElementById('canchasInput').value = btn.getAttribute('data-canchas');
+        document.getElementById('aperturaInput').value = btn.getAttribute('data-apertura');
+        document.getElementById('cierreInput').value = btn.getAttribute('data-cierre');
+        document.getElementById('amenidadesInput').value = btn.getAttribute('data-amenidades');
+        
+        resetDropZone();
+        document.getElementById('sedeModal').classList.add('active');
+    }
+    
+    function changeCanchas(delta) {
+        const input = document.getElementById('canchasInput');
+        let val = parseInt(input.value) || 1;
+        val += delta;
+        if (val < 1) val = 1;
+        input.value = val;
+    }
+
+    function updateDropZone(fileName) {
+        document.getElementById('dropZoneIcon').className = 'ri-check-line drop-zone-icon';
+        document.getElementById('dropZoneIcon').style.color = '#10b981';
+        document.getElementById('dropZoneText').innerHTML = 'Imagen seleccionada: ' + fileName;
+    }
+
+    function resetDropZone() {
+        document.getElementById('dropZoneIcon').className = 'ri-image-add-line drop-zone-icon';
+        document.getElementById('dropZoneIcon').style.color = '';
+        document.getElementById('dropZoneText').innerHTML = 'Arrastra y suelta la foto de la sede aquí<br>o haz clic para explorar (SVG, PNG, JPG)';
+    }
+    
+    function closeModal() {
+        document.getElementById('sedeModal').classList.remove('active');
+    }
+
+    // Drag and Drop Logic
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropZone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.click();
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            updateDropZone(fileInput.files[0].name);
+        }
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) {
+            updateDropZone(fileInput.files[0].name);
+        }
+    });
+</script>
 {% endblock %}

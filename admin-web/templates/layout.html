@@ -3,28 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administración - PI</title>
+    <title>Administración - Balonpié</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 </head>
 <body>
-    <div class="app-container">
+    <div class="app-layout">
+        
         <aside class="sidebar">
-            <div class="sidebar-logo">AdminTorneos</div>
-            <nav>
-                <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
-                <a href="{{ url_for('crear_torneo') }}" class="nav-link {% if request.endpoint == 'crear_torneo' %}active{% endif %}">Crear Torneo</a>
-                <a href="{{ url_for('gestionar_sedes') }}" class="nav-link {% if request.endpoint in ['gestionar_sedes', 'registrar_sede'] %}active{% endif %}">Gestión de Sedes</a>
-                <a href="{{ url_for('equipos_emparejamientos') }}" class="nav-link {% if request.endpoint in ['equipos_emparejamientos', 'gestionar_equipo', 'aceptar_equipos'] %}active{% endif %}">Equipos</a>
-                <a href="{{ url_for('cuadro_eliminatorias') }}" class="nav-link {% if request.endpoint == 'cuadro_eliminatorias' %}active{% endif %}">Eliminatorias</a>
-                <a href="{{ url_for('gestionar_horarios') }}" class="nav-link {% if request.endpoint == 'gestionar_horarios' %}active{% endif %}">Horarios</a>
-                <a href="{{ url_for('tabla_clasificacion') }}" class="nav-link {% if request.endpoint == 'tabla_clasificacion' %}active{% endif %}">Clasificación</a>
-                <a href="{{ url_for('login') }}" class="nav-link" style="margin-top: auto; color: var(--secondary);">Cerrar Sesión</a>
+            <div class="sidebar-header">
+                <img src="http://localhost:8001/uploads/sistema/Logo.jpeg" alt="Logo" style="width: 32px; height: 32px; border-radius: 6px; object-fit: cover;">
+                <h2>Balompié</h2>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard_bp.dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard_bp.dashboard' %}active{% endif %}">
+                    <i class="ri-dashboard-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('sedes_bp.gestionar_sedes') }}" class="nav-item {% if request.endpoint in ['sedes_bp.gestionar_sedes', 'sedes_bp.registrar_sede'] %}active{% endif %}">
+                    <i class="ri-map-pin-line"></i>
+                    <span>Sedes</span>
+                </a>
+                <a href="{{ url_for('torneos_bp.crear_torneo') }}" class="nav-item {% if request.endpoint == 'torneos_bp.crear_torneo' %}active{% endif %}">
+                    <i class="ri-trophy-line"></i>
+                    <span>Torneos</span>
+                </a>
+                <a href="{{ url_for('horarios_bp.gestionar_horarios') }}" class="nav-item {% if request.endpoint == 'horarios_bp.gestionar_horarios' %}active{% endif %}">
+                    <i class="ri-calendar-line"></i>
+                    <span>Horarios</span>
+                </a>
+                <a href="{{ url_for('torneos_bp.equipos_emparejamientos') }}" class="nav-item {% if request.endpoint in ['torneos_bp.equipos_emparejamientos', 'equipos_bp.gestionar_equipo', 'torneos_bp.aceptar_equipos', 'torneos_bp.cuadro_eliminatorias'] %}active{% endif %}">
+                    <i class="ri-team-line"></i>
+                    <span>Equipos</span>
+                </a>
+                <a href="{{ url_for('clasificacion_bp.tabla_clasificacion') }}" class="nav-item {% if request.endpoint == 'clasificacion_bp.tabla_clasificacion' %}active{% endif %}">
+                    <i class="ri-bar-chart-box-line"></i>
+                    <span>Clasificación</span>
+                </a>
+
+
+                
             </nav>
+            
+            <div class="sidebar-footer">
+                <a href="{{ url_for('auth_bp.logout') }}" class="nav-item logout">
+                    <i class="ri-logout-box-r-line"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+            </div>
         </aside>
 
-        <main class="main-content">
-            {% block content %}{% endblock %}
-        </main>
+        
+        <div class="main-wrapper">
+            
+            <header class="topbar">
+
+                
+                <div class="topbar-actions">
+                    
+
+                    
+                    <div class="user-profile">
+                        <div class="user-info">
+                            <span class="user-name">Administrador</span>
+                        </div>
+
+                    </div>
+                </div>
+            </header>
+
+            <main class="content-area">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
     </div>
 </body>
 </html>

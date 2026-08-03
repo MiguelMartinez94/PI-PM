@@ -1,74 +1,582 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>Gestionar Horarios de Partidos</h1>
-</div>
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
 
-<div class="card" style="margin-bottom: 2rem;">
-    <h2>Filtros</h2>
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem;">
-        <select class="form-control">
-            <option>Torneo Primavera 2026</option>
-        </select>
-        <select class="form-control">
-            <option>Jornada 1</option>
-            <option>Jornada 2</option>
-        </select>
-        <select class="form-control">
-            <option>Cancha Principal UPQ</option>
-            <option>Cancha Sur</option>
-        </select>
-        <input type="date" class="form-control">
-    </div>
-</div>
+    .page-title {
+        font-size: 1.5rem;
+        color: var(--dark);
+        margin: 0;
+    }
 
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h2>Partidos Programados</h2>
-        <button class="btn btn-primary">Asignar Árbitros Automáticamente</button>
-    </div>
+    .btn-primary {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .btn-secondary {
+        background-color: white;
+        color: var(--dark);
+        border: 1px solid #e5e7eb;
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .panel {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
     
-    <div class="table-container">
-        <table class="table">
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    
+    .filters-grid {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-control {
+        padding: 0.6rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 0.875rem;
+        outline: none;
+        min-width: 150px;
+    }
+    
+    
+    .calendar-container {
+        display: grid;
+        grid-template-columns: 80px repeat(7, 1fr);
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .cal-header {
+        background: var(--background);
+        padding: 1rem;
+        text-align: center;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: var(--dark);
+        border-bottom: 1px solid #e5e7eb;
+        border-right: 1px solid #e5e7eb;
+    }
+    
+    .cal-header.time-col {
+        border-right: 1px solid #e5e7eb;
+        background: white;
+    }
+
+    .cal-header span {
+        display: block;
+        font-weight: 400;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+    }
+
+    .cal-row {
+        display: contents;
+    }
+
+    .cal-time {
+        padding: 1rem 0;
+        text-align: center;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        border-right: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e5e7eb;
+        background: white;
+    }
+
+    .cal-cell {
+        border-right: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 0.5rem;
+        min-height: 100px;
+        background: white;
+        transition: background-color 0.2s;
+    }
+    
+    .cal-cell:nth-child(8n) {
+        border-right: none;
+    }
+    
+    .cal-cell:hover {
+        background: rgba(114, 47, 55, 0.02);
+    }
+
+    .match-event {
+        background: rgba(114, 47, 55, 0.1);
+        border-left: 3px solid var(--primary);
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .match-event:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .match-teams {
+        font-weight: 600;
+        color: var(--primary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .match-venue {
+        color: var(--text-muted);
+    }
+
+    
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+
+    .modal-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 400px;
+        padding: 2rem;
+        transform: translateY(-20px);
+        transition: transform 0.3s;
+    }
+
+    .modal-overlay.active .modal-content {
+        transform: translateY(0);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--dark);
+        margin: 0;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+    }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">Horarios y Calendario</h1>
+    <div style="display:flex; gap:1rem;">
+       
+        <button class="btn-primary" onclick="openModal()">
+            <i class="ri-add-line"></i> Programar Partido
+        </button>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="filters-grid">
+            <select class="form-control" id="filterTorneo" onchange="renderCalendar()">
+                <option value="">Torneo: Todos</option>
+                {% for t in torneos %}
+                <option value="{{ t.id }}">{{ t.nombre }}</option>
+                {% endfor %}
+            </select>
+            <select class="form-control" id="filterSede" onchange="renderCalendar()">
+                <option value="">Sede: Todas</option>
+                {% for s in sedes %}
+                <option value="{{ s.id }}">{{ s.nombre }}</option>
+                {% endfor %}
+            </select>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+                <button class="btn-secondary" style="padding:0.4rem 0.8rem;" onclick="changeWeek(-1)"><i class="ri-arrow-left-s-line"></i></button>
+                <span id="weekLabel" style="font-weight:600; font-size:0.875rem; margin:0 0.5rem; min-width: 150px; text-align: center;">Semana Actual</span>
+                <button class="btn-secondary" style="padding:0.4rem 0.8rem;" onclick="changeWeek(1)"><i class="ri-arrow-right-s-line"></i></button>
+                <button class="btn-secondary" style="padding:0.4rem 0.8rem;" onclick="resetWeek()">Hoy</button>
+            </div>
+        </div>
+        <div style="font-size:0.875rem; color:var(--text-muted);">Vista: Semanal</div>
+    </div>
+
+    <div class="calendar-container" id="calendarContainer">
+        
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Lista Detallada de Partidos</h2>
+    </div>
+    <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; text-align:left;">
             <thead>
-                <tr>
-                    <th>Hora</th>
-                    <th>Encuentro</th>
-                    <th>Sede</th>
-                    <th>Árbitro Principal</th>
-                    <th>Acción</th>
+                <tr style="border-bottom:1px solid #e5e7eb; color:var(--text-muted); font-size:0.875rem;">
+                    
+                    <th style="padding:1rem;">Local vs Visita</th>
+                    <th style="padding:1rem;">Fecha/Hora</th>
+                    <th style="padding:1rem;">Cancha</th>
+                    <th style="padding:1rem;">Árbitro</th>
+                    <th style="padding:1rem;">Estado</th>
+                    <th style="padding:1rem;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td><strong style="font-size: 16px;">08:00 AM</strong><br><span style="font-size: 12px; color: var(--neutral);">Sáb, 15 May</span></td>
-                    <td>Los Halcones <br>vs<br> Tigres FC</td>
-                    <td>Cancha Principal UPQ</td>
-                    <td>
-                        <select class="form-control" style="padding: 0.25rem; font-size: 12px;">
-                            <option>Pendiente de Asignar</option>
-                            <option selected>José M. (Confirmado)</option>
-                            <option>Luis R. (Pendiente)</option>
-                        </select>
+                {% for p in partidos %}
+                <tr style="border-bottom:1px solid #e5e7eb; font-size:0.875rem;">
+                    
+                    <td style="padding:1rem; font-weight:600; color:var(--primary);">{{ p.equipo_local }} vs {{ p.equipo_visita }}</td>
+                    <td style="padding:1rem;">{{ p.fecha_hora }}</td>
+                    <td style="padding:1rem;">{{ p.cancha }}</td>
+                    <td style="padding:1rem;">{% if p.arbitro %}{{ p.arbitro }}{% else %}<span style="color:var(--error); font-weight:600;">Sin Asignar</span>{% endif %}</td>
+                    <td style="padding:1rem;">
+                        <span style="background:var(--background); padding:0.25rem 0.5rem; border-radius:4px; font-size:0.75rem; font-weight:600;">{{ p.estado|upper }}</span>
                     </td>
-                    <td><button class="btn btn-secondary" style="font-size: 12px; padding: 0.25rem 0.75rem;">Guardar</button></td>
-                </tr>
-                <tr>
-                    <td><strong style="font-size: 16px;">10:00 AM</strong><br><span style="font-size: 12px; color: var(--neutral);">Sáb, 15 May</span></td>
-                    <td>Deportivo UPQ <br>vs<br> Lobos</td>
-                    <td>Cancha Sur</td>
-                    <td>
-                        <select class="form-control" style="padding: 0.25rem; font-size: 12px;">
-                            <option selected>Pendiente de Asignar</option>
-                            <option>José M.</option>
-                            <option>Luis R.</option>
-                        </select>
+                    <td style="padding:1rem;">
+                        <button class="btn-secondary" style="padding:0.4rem 0.8rem;" onclick="openModal('edit', {{ p.id }})">Editar</button>
                     </td>
-                    <td><button class="btn btn-secondary" style="font-size: 12px; padding: 0.25rem 0.75rem;">Guardar</button></td>
                 </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="padding:2rem; text-align:center; color:var(--text-muted);">No hay partidos programados.</td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+
+<div class="modal-overlay" id="matchModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modalTitle">Programar Partido</h2>
+            <button style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);" onclick="closeModal()"><i class="ri-close-line"></i></button>
+        </div>
+        
+        <form id="matchForm" onsubmit="event.preventDefault(); guardarHorario();">
+            <input type="hidden" id="formPartidoId" value="">
+            <div class="form-group">
+                <label class="form-label">Torneo</label>
+                <select class="form-control" id="formTorneo" required>
+                    <option value="">Seleccione Torneo</option>
+                    {% for t in torneos %}
+                    <option value="{{ t.id }}">{{ t.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <div class="form-group">
+                    <label class="form-label">Equipo Local</label>
+                    <select class="form-control" id="formLocal">
+                        <option value="">Por definir / Seleccione Local</option>
+                        {% for e in equipos %}
+                        <option value="{{ e.id }}">{{ e.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Equipo Visitante</label>
+                    <select class="form-control" id="formVisita">
+                        <option value="">Por definir / Seleccione Visitante</option>
+                        {% for e in equipos %}
+                        <option value="{{ e.id }}">{{ e.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <div class="form-group">
+                    <label class="form-label">Fecha</label>
+                    <input type="date" class="form-control" id="formFecha" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hora</label>
+                    <input type="time" class="form-control" id="formHora" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Cancha</label>
+                <select class="form-control" id="formCancha" required>
+                    <option value="">Seleccione Cancha</option>
+                    {% for c in canchas %}
+                    <option value="{{ c.id }}">{{ c.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Árbitro (Opcional)</label>
+                <select class="form-control" id="formArbitro">
+                    <option value="">Pendiente por asignar</option>
+                    {% for a in arbitros %}
+                    <option value="{{ a.id }}">{{ a.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:2rem;">
+                <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar Horario</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(mode, partidoId = null) {
+        document.getElementById('matchModal').classList.add('active');
+        document.getElementById('formPartidoId').value = '';
+        
+        if (mode === 'edit' && partidoId) {
+            document.getElementById('modalTitle').textContent = 'Editar Partido';
+            document.getElementById('formPartidoId').value = partidoId;
+            
+            // Find match and populate form
+            const p = todosLosPartidos.find(x => x.id == partidoId);
+            if (p) {
+                document.getElementById('formTorneo').value = p.torneo_id || '';
+                document.getElementById('formLocal').value = p.equipo_local_id || '';
+                document.getElementById('formVisita').value = p.equipo_visita_id || '';
+                document.getElementById('formCancha').value = p.cancha_id || '';
+                document.getElementById('formArbitro').value = p.arbitro_id || '';
+                
+                if (p.fecha_hora) {
+                    const dateParts = p.fecha_hora.split(/[T ]/);
+                    document.getElementById('formFecha').value = dateParts[0];
+                    if (dateParts[1]) {
+                        document.getElementById('formHora').value = dateParts[1].substring(0, 5);
+                    }
+                }
+            }
+        } else {
+            document.getElementById('modalTitle').textContent = 'Programar Partido';
+            document.getElementById('matchForm').reset();
+            // If mode is a date string from clicking a cell
+            if (mode && typeof mode === 'string' && mode !== 'edit') {
+                const d = new Date(mode);
+                if (!isNaN(d.getTime())) {
+                    document.getElementById('formFecha').value = d.toISOString().split('T')[0];
+                }
+            }
+        }
+    }
+    
+    function closeModal() {
+        document.getElementById('matchModal').classList.remove('active');
+    }
+
+    function guardarHorario() {
+        const partidoId = document.getElementById('formPartidoId').value;
+        const torneo_id = parseInt(document.getElementById('formTorneo').value);
+        const equipo_local_id = document.getElementById('formLocal').value ? parseInt(document.getElementById('formLocal').value) : null;
+        const equipo_visita_id = document.getElementById('formVisita').value ? parseInt(document.getElementById('formVisita').value) : null;
+        const cancha_id = parseInt(document.getElementById('formCancha').value);
+        const arbitro_id = document.getElementById('formArbitro').value ? parseInt(document.getElementById('formArbitro').value) : null;
+        
+        const fecha = document.getElementById('formFecha').value;
+        const hora = document.getElementById('formHora').value;
+        const fecha_hora = `${fecha}T${hora}:00`;
+
+        if (equipo_local_id !== null && equipo_local_id === equipo_visita_id) {
+            alert("El equipo local y visitante no pueden ser el mismo.");
+            return;
+        }
+
+        const payload = {
+            torneo_id, equipo_local_id, equipo_visita_id, cancha_id, fecha_hora, arbitro_id
+        };
+
+        const url = partidoId ? `/partidos/${partidoId}/editar` : '/partidos/crear';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(partidoId ? "Partido actualizado exitosamente" : "Partido programado exitosamente");
+                window.location.reload();
+            } else {
+                alert("Error: " + (data.error || ""));
+            }
+        });
+    }
+</script>
+<script>
+    // Partidos desde Flask a JS
+    const todosLosPartidos = {{ partidos|tojson|safe }};
+    let currentWeekStart = new Date();
+    
+    function initCalendar() {
+        // Ajustar a Lunes
+        const day = currentWeekStart.getDay();
+        const diff = currentWeekStart.getDate() - day + (day === 0 ? -6 : 1);
+        currentWeekStart.setDate(diff);
+        currentWeekStart.setHours(0,0,0,0);
+        renderCalendar();
+    }
+
+    function changeWeek(offset) {
+        currentWeekStart.setDate(currentWeekStart.getDate() + (offset * 7));
+        renderCalendar();
+    }
+
+    function resetWeek() {
+        currentWeekStart = new Date();
+        const day = currentWeekStart.getDay();
+        const diff = currentWeekStart.getDate() - day + (day === 0 ? -6 : 1);
+        currentWeekStart.setDate(diff);
+        currentWeekStart.setHours(0,0,0,0);
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const container = document.getElementById('calendarContainer');
+        const filterTorneo = document.getElementById('filterTorneo').value;
+        const filterSede = document.getElementById('filterSede').value;
+        
+        // Actualizar Label de Semana
+        const endOfWeek = new Date(currentWeekStart);
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
+        const formatOptions = { month: 'short', day: 'numeric' };
+        document.getElementById('weekLabel').textContent = `${currentWeekStart.toLocaleDateString('es-ES', formatOptions)} - ${endOfWeek.toLocaleDateString('es-ES', formatOptions)}`;
+
+        // Generar Header
+        let html = '<div class="cal-header time-col">Hora</div>';
+        const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        const currentDates = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(currentWeekStart);
+            d.setDate(d.getDate() + i);
+            currentDates.push(d);
+            const isToday = new Date().toDateString() === d.toDateString();
+            const colorStyle = isToday ? 'color: var(--primary); font-weight: bold;' : '';
+            html += `<div class="cal-header" style="${i===6 ? 'border-right:none;' : ''} ${colorStyle}">
+                        ${days[i]}<span style="${colorStyle}">${d.toLocaleDateString('es-ES', {day: 'numeric', month: 'short'})}</span>
+                     </div>`;
+        }
+
+        // Generar Filas de Horas (08:00 a 22:00)
+        const startHour = 8;
+        const endHour = 22;
+        
+        for (let h = startHour; h <= endHour; h++) {
+            const timeStr = `${h.toString().padStart(2, '0')}:00`;
+            html += `<div class="cal-row">`;
+            html += `<div class="cal-time">${timeStr}</div>`;
+            
+            for (let d = 0; d < 7; d++) {
+                const cellDate = new Date(currentDates[d]);
+                cellDate.setHours(h, 0, 0, 0);
+                
+                // Filtrar partidos que coincidan con la fecha, hora, torneo y sede
+                const cellPartidos = todosLosPartidos.filter(p => {
+                    if (!p.fecha_hora) return false;
+                    
+                    // Asegurar que la fecha se parsea como local extrayendo manualmente
+                    // p.fecha_hora viene típicamente como "YYYY-MM-DD HH:MM:SS" o "YYYY-MM-DDTHH:MM:SS"
+                    const dateParts = p.fecha_hora.split(/[T ]/);
+                    if (dateParts.length < 2) return false;
+                    
+                    const [y, m, d] = dateParts[0].split('-');
+                    const [hr] = dateParts[1].split(':');
+                    
+                    if (parseInt(y) !== cellDate.getFullYear() || 
+                        (parseInt(m) - 1) !== cellDate.getMonth() || 
+                        parseInt(d) !== cellDate.getDate() || 
+                        parseInt(hr) !== cellDate.getHours()) {
+                        return false;
+                    }
+
+                    if (filterTorneo && p.torneo_id.toString() !== filterTorneo) return false;
+                    if (filterSede && p.sede_id && p.sede_id.toString() !== filterSede) return false;
+                    return true;
+                });
+
+                html += `<div class="cal-cell" onclick="openModal('${cellDate.toISOString()}')">`;
+                cellPartidos.forEach(p => {
+                    html += `
+                        <div class="match-event" onclick="event.stopPropagation(); openModal('edit', ${p.id})">
+                            <div class="match-teams">${p.equipo_local} vs ${p.equipo_visita}</div>
+                            <div class="match-venue"><i class="ri-map-pin-line"></i> ${p.cancha || 'Sin cancha'}</div>
+                            <div style="font-size: 0.7rem; color: #6b7280; margin-top: 2px;"><i class="ri-user-line"></i> ${p.arbitro || 'Sin árbitro'}</div>
+                            <div style="font-size: 0.7rem; color: #6b7280; margin-top: 2px;">T: Torneo ${p.torneo_id}</div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+            html += `</div>`;
+        }
+        container.innerHTML = html;
+    }
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', initCalendar);
+</script>
 {% endblock %}

@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Gestionar Equipos</h1>
+    <div style="display:flex; gap:1rem;">
+        <input type="text" id="searchInput" class="form-control" placeholder="Buscar equipo..." onkeyup="filterEquipos()">
+    </div>
+</div>
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div style="background-color: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+    {% for message in messages %}
+      {{ message }}<br>
+    {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="panel">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre Equipo</th>
+                <th>Entrenador</th>
+                <th>Categoría</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for eq in equipos %}
+            <tr class="equipo-row">
+                <td>{{ eq.id }}</td>
+                <td class="equipo-nombre">
+                    <div style="display:flex; align-items:center; gap: 10px;">
+                        {% if eq.logo_url %}
+                            <img src="{{ eq.logo_url }}" alt="Logo" style="width:40px; height:40px; border-radius:50%;">
+                        {% else %}
+                            <div style="width:40px; height:40px; border-radius:50%; background:#ccc; display:flex; align-items:center; justify-content:center; font-weight:bold; color:white;">{{ eq.nombre[:2]|upper }}</div>
+                        {% endif %}
+                        {{ eq.nombre }}
+                    </div>
+                </td>
+                <td>{{ eq.entrenador_nombre | default(eq.entrenador_id) }}</td>
+                <td>{{ eq.categoria_nombre | default('Libre') }}</td>
+                <td>
+                    <a href="{{ url_for('equipos_bp.gestionar_equipo', id=eq.id) }}" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Detalles</a>
+                    <form action="{{ url_for('equipos_bp.eliminar_equipo', id=eq.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Seguro que deseas eliminar este equipo?');">
+                        <button type="submit" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1.2rem;">
+                            <i class="ri-delete-bin-line"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 2rem; color: #9ca3af;">No hay equipos registrados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .page-title { font-size: 1.5rem; color: var(--dark); margin: 0; }
+    .panel { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th, .data-table td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    .data-table th { background-color: #f9fafb; color: var(--text-muted); font-weight: 500; font-size: 0.875rem; }
+    .data-table td { color: var(--dark); font-size: 0.875rem; }
+    .form-control { padding: 0.6rem 1rem; border: 1px solid #e5e7eb; border-radius: 8px; font-family: inherit; font-size: 0.875rem; outline: none; min-width: 250px; }
+    .btn-secondary { background: white; color: var(--dark); border: 1px solid #e5e7eb; padding: 0.6rem 1rem; border-radius: 8px; cursor: pointer; text-decoration: none; }
+</style>
+
+<script>
+    function filterEquipos() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('.equipo-row');
+        rows.forEach(row => {
+            const name = row.querySelector('.equipo-nombre').textContent.toLowerCase();
+            if (name.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

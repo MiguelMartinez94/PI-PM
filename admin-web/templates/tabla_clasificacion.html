@@ -1,71 +1,636 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>Tabla de Clasificación</h1>
-    <select class="form-control" style="width: 250px;">
-        <option>Torneo Primavera 2026</option>
-    </select>
+<style>
+.tournament-bracket {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  margin-right: 1.5rem;
+}
+.bracket-match-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+.bracket-match-wrapper::before {
+  content: '';
+  position: absolute;
+  right: -0.75rem;
+  top: 25%;
+  bottom: 25%;
+  border-right: 2px solid #e5e7eb;
+}
+.bracket-match {
+  margin: 1rem 0;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius);
+  width: 160px;
+  font-size: 0.85rem;
+  box-shadow: var(--shadow-sm);
+  z-index: 2;
+}
+.bracket-team {
+  padding: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: var(--surface);
+}
+.bracket-team:last-child {
+  border-bottom: none;
+}
+.bracket-match::after {
+  content: '';
+  position: absolute;
+  right: -0.75rem;
+  top: 50%;
+  width: 0.75rem;
+  border-top: 2px solid #e5e7eb;
+  z-index: 1;
+}
+.bracket-round:not(:first-child) .bracket-match::before {
+  content: '';
+  position: absolute;
+  left: -1.5rem;
+  top: 50%;
+  width: 1.5rem;
+  border-top: 2px solid #e5e7eb;
+  z-index: 1;
+}
+.bracket-round:last-child .bracket-match::after { display: none; }
+.bracket-round:last-child .bracket-match-wrapper::before { display: none; }
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    padding: 2rem;
+    transform: translateY(-20px);
+    transition: transform 0.3s;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+</style>
+
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+        color: var(--dark);
+        margin: 0;
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .panel {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-control {
+        padding: 0.6rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 0.875rem;
+        outline: none;
+        min-width: 200px;
+    }
+
+    
+    .tabs {
+        display: flex;
+        gap: 2rem;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 1.5rem;
+    }
+
+    .tab {
+        padding: 0.75rem 0;
+        font-weight: 500;
+        color: var(--text-muted);
+        cursor: pointer;
+        position: relative;
+    }
+
+    .tab.active {
+        color: var(--primary);
+    }
+
+    .tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--primary);
+    }
+
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: center;
+    }
+
+    .table th, .table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .table th {
+        background: #f9fafb;
+        color: var(--text-muted);
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .table td {
+        font-size: 0.875rem;
+        color: var(--dark);
+    }
+
+    .team-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        text-align: left;
+    }
+
+    .team-logo {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--background);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    
+    .editable-cell {
+        background: #f9fafb;
+        border: 1px dashed #e5e7eb;
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+        width: 40px;
+        text-align: center;
+        transition: border-color 0.2s, background-color 0.2s;
+        display: inline-block;
+    }
+    
+    .editable-cell:focus {
+        outline: none;
+        border-color: var(--primary);
+        background: white;
+    }
+
+    .pts-cell {
+        font-weight: 700;
+        color: var(--primary);
+        font-size: 1rem;
+    }
+
+    .zone-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 1.5rem;
+    }
+
+    .zone-color {
+        width: 12px;
+        height: 12px;
+        background: rgba(16, 185, 129, 0.1);
+        border-left: 2px solid #10b981;
+    }
+    
+    .row-qualified {
+        background: rgba(16, 185, 129, 0.05);
+    }
+    .row-qualified td:first-child {
+        border-left: 3px solid #10b981;
+    }
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    padding: 2rem;
+    transform: translateY(-20px);
+    transition: transform 0.3s;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+</style>
+
+<div class="page-header">
+    <div style="display:flex; align-items:center; gap: 1rem;">
+        <h1 class="page-title">Tabla de Clasificación</h1>
+        <button class="btn btn-primary" onclick="verCuadroEliminatorias()" style="padding: 0.4rem 1rem; font-size: 0.85rem;">
+            <i class="ri-git-merge-line"></i> Ver Cuadro
+        </button>
+    </div>
+    <div style="display:flex; gap:1rem;">
+        <select class="form-control" id="torneoSelect" onchange="window.location.href='?torneo_id=' + this.value;">
+            <option value="">Seleccione Torneo</option>
+            {% for t in torneos %}
+                <option value="{{ t.id }}" {% if current_torneo|string == t.id|string %}selected{% endif %}>{{ t.nombre }}</option>
+            {% endfor %}
+        </select>
+        <select class="form-control" style="min-width: 150px;" onchange="window.location.href='?torneo_id={{ current_torneo }}&grupo=' + this.value;" {% if not current_torneo %}disabled{% endif %}>
+            <option value="todos" {% if current_grupo == 'todos' %}selected{% endif %}>Todos los grupos</option>
+            {% if grupos %}
+                {% for g in grupos.keys() %}
+                <option value="{{ g }}" {% if current_grupo == g %}selected{% endif %}>Grupo {{ g }}</option>
+                {% endfor %}
+            {% endif %}
+        </select>
+        <button class="btn-primary" onclick="exportarClasificacionPDF()">
+            <i class="ri-file-pdf-line"></i> Exportar a PDF
+        </button>
+    </div>
 </div>
 
-<div class="card">
-    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
-        <button class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 14px;">General</button>
-        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 14px; border: none; color: var(--neutral);">Goleadores</button>
-        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 14px; border: none; color: var(--neutral);">Fair Play</button>
+<div class="panel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+        <div class="tabs" style="margin: 0; border: none;">
+            <div class="tab active">
+                General 
+                {% if current_grupo and current_grupo != 'todos' %}
+                    (Grupo {{ current_grupo }})
+                {% else %}
+                    (Todos los grupos)
+                {% endif %}
+            </div>
+        </div>
+        <button class="btn-primary" onclick="alert('Estadísticas actualizadas')">
+            <i class="ri-save-line"></i> Guardar Cambios
+        </button>
     </div>
 
-    <div class="table-container">
-        <table class="table" style="text-align: center;">
+    <div style="overflow-x: auto;">
+        <table class="table">
             <thead>
                 <tr>
-                    <th style="text-align: left;">Pos</th>
+                    <th style="text-align: left; width: 50px;">Pos</th>
                     <th style="text-align: left;">Equipo</th>
-                    <th>PJ</th>
-                    <th>PG</th>
-                    <th>PE</th>
-                    <th>PP</th>
-                    <th>GF</th>
-                    <th>GC</th>
-                    <th>DG</th>
-                    <th>Pts</th>
+                    <th title="Partidos Jugados">PJ</th>
+                    <th title="Partidos Ganados">PG</th>
+                    <th title="Partidos Empatados">PE</th>
+                    <th title="Partidos Perdidos">PP</th>
+                    <th title="Goles a Favor">GF</th>
+                    <th title="Goles en Contra">GC</th>
+                    <th title="Diferencia de Goles">DIF</th>
+                    <th title="Puntos">PTS</th>
                 </tr>
             </thead>
             <tbody>
-                {% if posiciones %}
-                    {% for pos in posiciones %}
-                    <tr>
-                        <td style="text-align: left; font-weight: bold;">{{ loop.index }}</td>
-                        <td style="text-align: left; font-weight: bold;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <div class="placeholder-avatar" style="width: 24px; height: 24px;"></div>
-                                {{ pos.equipo_nombre }}
-                            </div>
-                        </td>
-                        <td>{{ pos.partidos_jugados }}</td>
-                        <td>{{ pos.ganados }}</td>
-                        <td>{{ pos.empatados }}</td>
-                        <td>{{ pos.perdidos }}</td>
-                        <td>{{ pos.goles_favor }}</td>
-                        <td>{{ pos.goles_contra }}</td>
-                        <td>{{ pos.diferencia_goles }}</td>
-                        <td style="font-weight: bold; color: var(--primary); font-size: 18px;">{{ pos.puntos }}</td>
-                    </tr>
-                    {% endfor %}
+                {% for p in posiciones %}
+                <tr class="{{ 'row-qualified' if loop.index <= 2 else '' }}">
+                    <td style="text-align: left; font-weight: 600;">{{ loop.index }}</td>
+                    <td>
+                        <div class="team-cell">
+                            <div class="team-logo">{{ p.equipo_nombre[:3]|upper }}</div>
+                            <span style="font-weight: 500;">{{ p.equipo_nombre }}</span>
+                        </div>
+                    </td>
+                    <td><div class="editable-cell" contenteditable="true">{{ p.partidos_jugados }}</div></td>
+                    <td><div class="editable-cell" contenteditable="true">{{ p.ganados }}</div></td>
+                    <td><div class="editable-cell" contenteditable="true">{{ p.empatados }}</div></td>
+                    <td><div class="editable-cell" contenteditable="true">{{ p.perdidos }}</div></td>
+                    <td><div class="editable-cell" contenteditable="true">{{ p.goles_favor }}</div></td>
+                    <td><div class="editable-cell" contenteditable="true">{{ p.goles_contra }}</div></td>
+                    <td style="font-weight: 500;">{{ '+' if p.diferencia > 0 else '' }}{{ p.diferencia }}</td>
+                    <td class="pts-cell">{{ p.puntos }}</td>
+                </tr>
                 {% else %}
-                    <tr>
-                        <td colspan="10" style="text-align: center; color: var(--neutral); padding: 2rem;">Aún no hay registros creados</td>
-                    </tr>
-                {% endif %}
+                <tr>
+                    <td colspan="10" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        {% if not current_torneo %}
+                            Seleccione un torneo para ver la clasificación.
+                        {% else %}
+                            No hay datos de clasificación para este torneo.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
-    
-    <div style="margin-top: 1rem; display: flex; gap: 1.5rem; font-size: 12px; color: var(--neutral);">
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <div style="width: 12px; height: 12px; background-color: rgba(46, 125, 50, 0.2); border-left: 2px solid var(--success);"></div>
-            Zona de Liguilla / Play-offs
+
+    <div class="zone-indicator">
+        <div class="zone-color"></div>
+        <span>Zona de Clasificación Directa / Play-offs</span>
+    </div>
+</div>
+
+<script>
+    // Script para recalcular DIF y PTS cuando se editen las celdas, opcional pero mejora la UX
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('.editable-cell');
+        cells.forEach(cell => {
+            cell.addEventListener('input', () => {
+                const pg = parseInt(cells[1].innerText) || 0;
+                const pe = parseInt(cells[2].innerText) || 0;
+                const pp = parseInt(cells[3].innerText) || 0;
+                const gf = parseInt(cells[4].innerText) || 0;
+                const gc = parseInt(cells[5].innerText) || 0;
+                
+                const dif = gf - gc;
+                const pts = (pg * 3) + (pe * 1);
+                
+                row.children[8].innerText = (dif > 0 ? '+' : '') + dif;
+                row.children[9].innerText = pts;
+            });
+        });
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    function exportarClasificacionPDF() {
+        const element = document.querySelector('.table').parentElement;
+        const opt = {
+            margin:       0.5,
+            filename:     'tabla_clasificacion.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+</script>
+
+
+<div id="readOnlyBracketModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:2rem; border-radius:12px; max-width:900px; width:90%; max-height:90vh; overflow-y:auto; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <h2 style="margin:0; font-size:1.25rem; font-weight:600; color:var(--dark);">Cuadro de Eliminatorias</h2>
+            <button style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);" onclick="document.getElementById('readOnlyBracketModal').style.display='none'"><i class="ri-close-line"></i></button>
+        </div>
+        <div id="readOnlyBracketContainer" style="min-height: 200px; display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; background:#f9fafb; border-radius:12px; align-items:center; justify-content:center;">
+            <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Cargando cuadro...</div>
         </div>
     </div>
 </div>
+
+<style>
+    
+    .bracket {
+        display: flex;
+        flex-direction: row;
+        gap: 2rem;
+        margin: 2rem 0;
+        overflow-x: auto;
+        padding-bottom: 2rem;
+    }
+    .bracket-column {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        gap: 1rem;
+        min-width: 200px;
+    }
+    .bracket-match {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        position: relative;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .bracket-team {
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        color: var(--dark);
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .bracket-team:last-child {
+        border-bottom: none;
+    }
+    .bracket-column:not(:last-child) .bracket-match::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: -1rem;
+        width: 1rem;
+        height: 2px;
+        background: #e5e7eb;
+    }
+    .bracket-column:not(:first-child) .bracket-match::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: -1rem;
+        width: 1rem;
+        height: 2px;
+        background: #e5e7eb;
+    }
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    padding: 2rem;
+    transform: translateY(-20px);
+    transition: transform 0.3s;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+</style>
+
+<script>
+function closeBracketModal() {
+    document.getElementById('bracketModal').classList.remove('active');
+}
+
+function renderBracket(data) {
+    let html = `<div style="text-align: center; margin-bottom:1rem;"><h3 style="color:var(--dark);">${data.message || 'Cuadro de Eliminatorias'}</h3></div>`;
+    html += `<div class="tournament-bracket" style="overflow-x: auto; max-width: 100%;">`;
+    
+    let matches = data.matches || [];
+    let totalMatches = matches.length;
+    let firstRoundCount = Math.ceil(totalMatches / 2); 
+    
+    let currentIndex = 0;
+    let currentRoundCount = firstRoundCount;
+    
+    while(currentRoundCount >= 1 && currentIndex < totalMatches) {
+        html += `<div class="bracket-round">`;
+        for(let i=0; i<currentRoundCount; i+=2) {
+            html += `<div class="bracket-match-wrapper">`;
+            
+            let m1 = matches[currentIndex];
+            let arb1 = m1.arbitro && m1.arbitro !== 'Sin árbitro' ? `<div style="font-size:0.75rem; color:var(--text-muted); padding:0.2rem 0.5rem;">${m1.arbitro}</div>` : '';
+            html += `
+            <div class="bracket-match">
+                <div class="bracket-team">${m1.local || 'Por definir'}</div>
+                <div class="bracket-team">${m1.visita || 'Por definir'}</div>
+                ${arb1}
+            </div>`;
+            currentIndex++;
+            
+            if (i+1 < currentRoundCount && currentIndex < totalMatches) {
+                let m2 = matches[currentIndex];
+                let arb2 = m2.arbitro && m2.arbitro !== 'Sin árbitro' ? `<div style="font-size:0.75rem; color:var(--text-muted); padding:0.2rem 0.5rem;">${m2.arbitro}</div>` : '';
+                html += `
+                <div class="bracket-match">
+                    <div class="bracket-team">${m2.local || 'Por definir'}</div>
+                    <div class="bracket-team">${m2.visita || 'Por definir'}</div>
+                    ${arb2}
+                </div>`;
+                currentIndex++;
+            }
+            html += `</div>`;
+        }
+        html += `</div>`;
+        
+        currentRoundCount = Math.floor(currentRoundCount / 2);
+    }
+    
+    if (firstRoundCount >= 2) {
+        html += `<div class="bracket-round"><div class="bracket-match-wrapper">
+        <div class="bracket-match" style="border-color: var(--primary);">
+            <div class="bracket-team" style="color:var(--primary); font-weight:bold;">CAMPEÓN</div>
+        </div></div></div>`;
+    }
+    
+    html += `</div>`;
+    document.getElementById('bracket-container').innerHTML = html;
+}
+
+function verCuadroEliminatorias() {
+    document.getElementById('bracketModal').classList.add('active');
+    document.getElementById('bracket-container').innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;"><i class="ri-loader-4-line ri-spin" style="font-size:2rem;"></i><br>Cargando cuadro...</div>';
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    let tId = urlParams.get('torneo_id');
+    if (!tId) {
+        const tIdElem = document.getElementById('torneo_id_val');
+        if (tIdElem) tId = tIdElem.value;
+        else tId = window.location.pathname.split('/').pop();
+    }
+    
+    if (isNaN(tId) || !tId) { tId = {{ current_torneo if current_torneo else "null" }}; }
+    
+    fetch(`/${tId}/llaves`)
+    .then(res => res.json())
+    .then(data => {
+        if(data.success && data.matches && data.matches.length > 0) {
+            renderBracket(data);
+        } else {
+            document.getElementById('bracket-container').innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">Aún no se ha generado un cuadro de eliminatorias para este torneo.</div>';
+        }
+    })
+    .catch(err => {
+        document.getElementById('bracket-container').innerHTML = '<div style="text-align: center; color: red; padding: 2rem;">Error al cargar el cuadro.</div>';
+    });
+}
+</script>
+
+
+
+
+<div class="modal-overlay" id="bracketModal">
+    <div class="modal-content" style="max-width: 95vw; width: max-content; min-width: 800px;">
+        <div class="modal-header">
+            <h2 class="modal-title" style="margin:0;">Cuadro de Eliminatorias</h2>
+            <button style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);" onclick="closeBracketModal()"><i class="ri-close-line"></i></button>
+        </div>
+        
+        <div id="bracket-container" style="min-height: 200px; display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; background:#f9fafb; border-radius:12px; align-items:center; justify-content:center;">
+            <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Cargando...</div>
+        </div>
+    </div>
+</div>
+
+</div>
+
 {% endblock %}

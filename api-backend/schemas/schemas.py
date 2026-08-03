@@ -1,32 +1,41 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
-from datetime import date, time, datetime
+from typing import Optional
+from datetime import date, datetime
 
 
 class Token(BaseModel):
     access_token: str
     token_type: str
+    user_id: Optional[int] = None
+    rol_id: Optional[int] = None
+    rol_nombre: Optional[str] = None
+
 
 class TokenData(BaseModel):
     correo: Optional[str] = None
     rol_id: Optional[int] = None
 
+
 class UsuarioBase(BaseModel):
     nombre: str
     correo: EmailStr
     telefono: Optional[str] = None
+    foto_url: Optional[str] = None
+
 
 class UsuarioCreate(UsuarioBase):
     contrasena: str
     rol_id: int
+
 
 class UsuarioResponse(UsuarioBase):
     id: int
     rol_id: int
     activo: bool
     creado_en: datetime
+
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class JugadorCreate(BaseModel):
@@ -35,12 +44,30 @@ class JugadorCreate(BaseModel):
     posicion: Optional[str] = None
     especialidad: Optional[str] = None
 
+
 class ArbitroCreate(BaseModel):
     categoria_id: Optional[int] = None
     anios_experiencia: Optional[int] = 0
+    certificado_url: Optional[str] = None
+
 
 class EntrenadorCreate(BaseModel):
     anios_experiencia: Optional[int] = 0
+
+
+class JugadorRegistro(BaseModel):
+    usuario: UsuarioCreate
+    jugador: Optional[JugadorCreate] = None
+
+
+class EntrenadorRegistro(BaseModel):
+    usuario: UsuarioCreate
+    entrenador: Optional[EntrenadorCreate] = None
+
+
+class ArbitroRegistro(BaseModel):
+    usuario: UsuarioCreate
+    arbitro: Optional[ArbitroCreate] = None
 
 
 class TorneoBase(BaseModel):
@@ -48,18 +75,24 @@ class TorneoBase(BaseModel):
     categoria_id: Optional[int] = None
     nombre: str
     cupo_equipos: int
+    formato: Optional[str] = None
+    costo_inscripcion: Optional[float] = 0.0
+    reglamento_url: Optional[str] = None
     fecha_inicio: date
     fecha_fin: date
 
+
 class TorneoCreate(TorneoBase):
     pass
+
 
 class TorneoResponse(TorneoBase):
     id: int
     admin_id: int
     estado: str
+
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class EquipoBase(BaseModel):
@@ -68,14 +101,17 @@ class EquipoBase(BaseModel):
     escudo_url: Optional[str] = None
     limite_jugadores: int = 20
 
+
 class EquipoCreate(EquipoBase):
     pass
+
 
 class EquipoResponse(EquipoBase):
     id: int
     entrenador_id: int
+
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PartidoBase(BaseModel):
@@ -84,6 +120,8 @@ class PartidoBase(BaseModel):
     equipo_visita_id: int
     cancha_id: int
     fecha_hora: datetime
+    arbitro_id: Optional[int] = None
+
 
 class PartidoResponse(PartidoBase):
     id: int
@@ -92,8 +130,10 @@ class PartidoResponse(PartidoBase):
     estado_arbitro: str
     goles_local: int
     goles_visita: int
+
     class Config:
-        orm_mode = True
+        from_attributes = True
+
 
 class EventoPartidoCreate(BaseModel):
     equipo_id: int

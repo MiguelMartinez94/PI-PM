@@ -1,0 +1,584 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+.tournament-bracket {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  margin-right: 1.5rem;
+}
+.bracket-match-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+.bracket-match-wrapper::before {
+  content: '';
+  position: absolute;
+  right: -0.75rem;
+  top: 25%;
+  bottom: 25%;
+  border-right: 2px solid #e5e7eb;
+}
+.bracket-match {
+  margin: 1rem 0;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius);
+  width: 160px;
+  font-size: 0.85rem;
+  box-shadow: var(--shadow-sm);
+  z-index: 2;
+}
+.bracket-team {
+  padding: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: var(--surface);
+}
+.bracket-team:last-child {
+  border-bottom: none;
+}
+.bracket-match::after {
+  content: '';
+  position: absolute;
+  right: -0.75rem;
+  top: 50%;
+  width: 0.75rem;
+  border-top: 2px solid #e5e7eb;
+  z-index: 1;
+}
+.bracket-round:not(:first-child) .bracket-match::before {
+  content: '';
+  position: absolute;
+  left: -1.5rem;
+  top: 50%;
+  width: 1.5rem;
+  border-top: 2px solid #e5e7eb;
+  z-index: 1;
+}
+.bracket-round:last-child .bracket-match::after { display: none; }
+.bracket-round:last-child .bracket-match-wrapper::before { display: none; }
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    padding: 2rem;
+    transform: translateY(-20px);
+    transition: transform 0.3s;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+</style>
+
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+        color: var(--dark);
+        margin: 0;
+    }
+
+    .btn-secondary {
+        background-color: white;
+        color: var(--dark);
+        border: 1px solid #e5e7eb;
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    
+    .team-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.5rem;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .team-header {
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        background: rgba(114, 47, 55, 0.03);
+        border-bottom: 1px solid #e5e7eb;
+        cursor: pointer;
+    }
+    
+    .team-logo {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        background-color: var(--background);
+    }
+
+    .team-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--dark);
+        margin: 0 0 0.25rem 0;
+    }
+    
+    .team-subtitle {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    .team-content {
+        padding: 1.5rem;
+        display: none;
+    }
+    
+    .team-content.active {
+        display: block;
+    }
+    
+    
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+    .data-table th, .data-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .data-table th {
+        background: #f9fafb;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    
+    .tab-container {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    .tab-btn {
+        background: none;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--text-muted);
+    }
+    .tab-btn.active {
+        color: var(--primary);
+        border-bottom: 2px solid var(--primary);
+        margin-bottom: -2px;
+    }
+    
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    padding: 2rem;
+    transform: translateY(-20px);
+    transition: transform 0.3s;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">Detalles: {{ torneo.nombre }}</h1>
+    <div style="display:flex; gap:1rem; align-items: center;">
+        <button class="btn btn-primary" onclick="verCuadroEliminatorias()">
+            <i class="ri-git-merge-line"></i> Ver Cuadro de Eliminatorias
+        </button>
+        <a href="{{ url_for('torneos_bp.crear_torneo') }}" class="btn-secondary">
+            <i class="ri-arrow-left-line"></i> Volver a Torneos
+        </a>
+    </div>
+</div>
+
+<div class="tab-container">
+    <button class="tab-btn active" onclick="switchMainTab('equipos', this)">Equipos y Jugadores</button>
+    <button class="tab-btn" onclick="switchMainTab('arbitros', this)">Árbitros Disponibles</button>
+</div>
+
+
+<div id="sec-equipos" class="view-section active">
+    {% if detalles.equipos %}
+        {% for equipo in detalles.equipos %}
+        <div class="team-card">
+            <div class="team-header" onclick="toggleTeam(this)">
+                <img src="{{ equipo.escudo_url or 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&q=80&w=150&h=150' }}" alt="Logo" class="team-logo">
+                <div style="flex-grow: 1;">
+                    <h3 class="team-title">{{ equipo.nombre }} <span style="font-size:0.875rem; font-weight:400; padding: 0.25rem 0.5rem; border-radius:12px; background:#f3f4f6; color:#6b7280; margin-left:0.5rem;">{{ equipo.estado_inscripcion|capitalize }}</span></h3>
+                    <p class="team-subtitle">
+                        <i class="ri-user-star-line"></i> Entrenador: 
+                        {% if equipo.entrenador %}
+                            {{ equipo.entrenador.nombre }} ({{ equipo.entrenador.correo }})
+                        {% else %}
+                            Sin asignar
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <i class="ri-arrow-down-s-line" style="font-size: 1.5rem; color: var(--text-muted);"></i>
+                </div>
+            </div>
+            
+            <div class="team-content">
+                <h4 style="margin-top:0; margin-bottom:1rem; color:var(--dark);">Plantilla de Jugadores ({{ equipo.jugadores|length }})</h4>
+                {% if equipo.jugadores %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Dorsal</th>
+                            <th>Nombre</th>
+                            <th>Posición</th>
+                            <th>Correo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for jug in equipo.jugadores %}
+                        <tr>
+                            <td>{{ jug.dorsal or '-' }}</td>
+                            <td>{{ jug.nombre }}</td>
+                            <td>{{ jug.posicion or '-' }}</td>
+                            <td>{{ jug.correo }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color:var(--text-muted);">Este equipo no tiene jugadores registrados activos.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div style="background:white; padding:3rem; text-align:center; border-radius:12px; border:1px dashed #e5e7eb;">
+            <i class="ri-team-line" style="font-size:3rem; color:var(--text-muted); margin-bottom:1rem; display:block;"></i>
+            <h3 style="margin-bottom:0.5rem;">Sin Equipos Inscritos</h3>
+            <p style="color:var(--text-muted);">Actualmente no hay equipos participando en este torneo.</p>
+        </div>
+    {% endif %}
+</div>
+
+
+<div id="sec-arbitros" class="view-section">
+    <div style="background:white; border-radius:12px; border:1px solid #e5e7eb; overflow:hidden;">
+        {% if detalles.arbitros %}
+        <table class="data-table" style="margin-top:0;">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Teléfono</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for arb in detalles.arbitros %}
+                <tr>
+                    <td>{{ arb.id }}</td>
+                    <td>{{ arb.nombre }}</td>
+                    <td>{{ arb.correo }}</td>
+                    <td>{{ arb.telefono or 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding:3rem; text-align:center;">
+            <p style="color:var(--text-muted);">No hay árbitros registrados en el sistema.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function toggleTeam(headerEl) {
+        const content = headerEl.nextElementSibling;
+        const icon = headerEl.querySelector('.ri-arrow-down-s-line, .ri-arrow-up-s-line');
+        
+        if (content.classList.contains('active')) {
+            content.classList.remove('active');
+            icon.classList.remove('ri-arrow-up-s-line');
+            icon.classList.add('ri-arrow-down-s-line');
+        } else {
+            content.classList.add('active');
+            icon.classList.remove('ri-arrow-down-s-line');
+            icon.classList.add('ri-arrow-up-s-line');
+        }
+    }
+    
+    function switchMainTab(secId, btnEl) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        btnEl.classList.add('active');
+        
+        document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+        document.getElementById(`sec-${secId}`).classList.add('active');
+    }
+</script>
+
+
+<div id="readOnlyBracketModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:2rem; border-radius:12px; max-width:900px; width:90%; max-height:90vh; overflow-y:auto; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <h2 style="margin:0; font-size:1.25rem; font-weight:600; color:var(--dark);">Cuadro de Eliminatorias</h2>
+            <button style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);" onclick="document.getElementById('readOnlyBracketModal').style.display='none'"><i class="ri-close-line"></i></button>
+        </div>
+        <div id="readOnlyBracketContainer" style="min-height: 200px; display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; background:#f9fafb; border-radius:12px; align-items:center; justify-content:center;">
+            <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Cargando cuadro...</div>
+        </div>
+    </div>
+</div>
+
+<style>
+    
+    .bracket {
+        display: flex;
+        flex-direction: row;
+        gap: 2rem;
+        margin: 2rem 0;
+        overflow-x: auto;
+        padding-bottom: 2rem;
+    }
+    .bracket-column {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        gap: 1rem;
+        min-width: 200px;
+    }
+    .bracket-match {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        position: relative;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .bracket-team {
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        color: var(--dark);
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .bracket-team:last-child {
+        border-bottom: none;
+    }
+    .bracket-column:not(:last-child) .bracket-match::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: -1rem;
+        width: 1rem;
+        height: 2px;
+        background: #e5e7eb;
+    }
+    .bracket-column:not(:first-child) .bracket-match::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: -1rem;
+        width: 1rem;
+        height: 2px;
+        background: #e5e7eb;
+    }
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    padding: 2rem;
+    transform: translateY(-20px);
+    transition: transform 0.3s;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+</style>
+
+<script>
+function closeBracketModal() {
+    document.getElementById('bracketModal').classList.remove('active');
+}
+
+function renderBracket(data) {
+    let html = `<div style="text-align: center; margin-bottom:1rem;"><h3 style="color:var(--dark);">${data.message || 'Cuadro de Eliminatorias'}</h3></div>`;
+    html += `<div class="tournament-bracket" style="overflow-x: auto; max-width: 100%;">`;
+    
+    let matches = data.matches || [];
+    let totalMatches = matches.length;
+    let firstRoundCount = Math.ceil(totalMatches / 2); 
+    
+    let currentIndex = 0;
+    let currentRoundCount = firstRoundCount;
+    
+    while(currentRoundCount >= 1 && currentIndex < totalMatches) {
+        html += `<div class="bracket-round">`;
+        for(let i=0; i<currentRoundCount; i+=2) {
+            html += `<div class="bracket-match-wrapper">`;
+            
+            let m1 = matches[currentIndex];
+            let arb1 = m1.arbitro && m1.arbitro !== 'Sin árbitro' ? `<div style="font-size:0.75rem; color:var(--text-muted); padding:0.2rem 0.5rem;">${m1.arbitro}</div>` : '';
+            html += `
+            <div class="bracket-match">
+                <div class="bracket-team">${m1.local || 'Por definir'}</div>
+                <div class="bracket-team">${m1.visita || 'Por definir'}</div>
+                ${arb1}
+            </div>`;
+            currentIndex++;
+            
+            if (i+1 < currentRoundCount && currentIndex < totalMatches) {
+                let m2 = matches[currentIndex];
+                let arb2 = m2.arbitro && m2.arbitro !== 'Sin árbitro' ? `<div style="font-size:0.75rem; color:var(--text-muted); padding:0.2rem 0.5rem;">${m2.arbitro}</div>` : '';
+                html += `
+                <div class="bracket-match">
+                    <div class="bracket-team">${m2.local || 'Por definir'}</div>
+                    <div class="bracket-team">${m2.visita || 'Por definir'}</div>
+                    ${arb2}
+                </div>`;
+                currentIndex++;
+            }
+            html += `</div>`;
+        }
+        html += `</div>`;
+        
+        currentRoundCount = Math.floor(currentRoundCount / 2);
+    }
+    
+    if (firstRoundCount >= 2) {
+        html += `<div class="bracket-round"><div class="bracket-match-wrapper">
+        <div class="bracket-match" style="border-color: var(--primary);">
+            <div class="bracket-team" style="color:var(--primary); font-weight:bold;">CAMPEÓN</div>
+        </div></div></div>`;
+    }
+    
+    html += `</div>`;
+    document.getElementById('bracket-container').innerHTML = html;
+}
+
+function verCuadroEliminatorias() {
+    document.getElementById('bracketModal').classList.add('active');
+    document.getElementById('bracket-container').innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;"><i class="ri-loader-4-line ri-spin" style="font-size:2rem;"></i><br>Cargando cuadro...</div>';
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    let tId = urlParams.get('torneo_id');
+    if (!tId) {
+        const tIdElem = document.getElementById('torneo_id_val');
+        if (tIdElem) tId = tIdElem.value;
+        else tId = window.location.pathname.split('/').pop();
+    }
+    
+    if (isNaN(tId) || !tId) { tId = {{ torneo.id if torneo else "null" }}; }
+    
+    fetch(`/${tId}/llaves`)
+    .then(res => res.json())
+    .then(data => {
+        if(data.success && data.matches && data.matches.length > 0) {
+            renderBracket(data);
+        } else {
+            document.getElementById('bracket-container').innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">Aún no se ha generado un cuadro de eliminatorias para este torneo.</div>';
+        }
+    })
+    .catch(err => {
+        document.getElementById('bracket-container').innerHTML = '<div style="text-align: center; color: red; padding: 2rem;">Error al cargar el cuadro.</div>';
+    });
+}
+</script>
+
+
+
+
+<div class="modal-overlay" id="bracketModal">
+    <div class="modal-content" style="max-width: 95vw; width: max-content; min-width: 800px;">
+        <div class="modal-header">
+            <h2 class="modal-title" style="margin:0;">Cuadro de Eliminatorias</h2>
+            <button style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);" onclick="closeBracketModal()"><i class="ri-close-line"></i></button>
+        </div>
+        
+        <div id="bracket-container" style="min-height: 200px; display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; background:#f9fafb; border-radius:12px; align-items:center; justify-content:center;">
+            <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Cargando...</div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+{% endblock %}

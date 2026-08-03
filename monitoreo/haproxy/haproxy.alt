@@ -1,0 +1,50 @@
+global
+    log stdout format raw local0
+    maxconn 2000
+
+defaults
+    log global
+    mode http
+    option httplog
+    option forwardfor
+    timeout connect 5s
+    timeout client 30s
+    timeout server 30s
+
+frontend http_front
+    bind *:80
+
+    acl host_laravel hdr(host) -i laravel.local
+    acl host_flask hdr(host) -i flask.local
+    acl host_api hdr(host) -i api.local
+
+    use_backend laravel_back if host_laravel
+    use_backend flask_back if host_flask
+    use_backend api_back if host_api
+
+    default_backend laravel_back
+
+backend laravel_back
+    balance roundrobin
+    cookie SRV insert indirect nocache
+    server laravel1 laravel1:8000 check cookie l1
+    server laravel2 laravel2:8000 check cookie l2
+
+backend flask_back
+    balance roundrobin
+    cookie SRV insert indirect nocache
+    server flask1 flask1:5000 check cookie f1
+    server flask2 flask2:5000 check cookie f2
+
+backend api_back
+    balance roundrobin
+    server api1 api1:8000 check
+    server api2 api2:8000 check
+
+listen stats
+    bind *:8404
+    mode http
+    stats enable
+    stats uri /stats
+    stats refresh 5s
+    stats auth admin:admin

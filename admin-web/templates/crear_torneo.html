@@ -1,66 +1,617 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>Crear Torneo</h1>
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+        color: var(--dark);
+        margin: 0;
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+    
+    .btn-secondary {
+        background-color: white;
+        color: var(--dark);
+        border: 1px solid #e5e7eb;
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    
+    .tournaments-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .tournament-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s;
+    }
+    
+    .tournament-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .tournament-logo {
+        height: 140px;
+        width: 100%;
+        object-fit: cover;
+        background-color: var(--background);
+    }
+
+    .tournament-body {
+        padding: 1.5rem;
+    }
+
+    .tournament-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 0.25rem;
+    }
+
+    .tournament-category {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }
+
+    .tournament-status {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .status-active { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .status-planned { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .status-finished { background: rgba(107, 114, 128, 0.1); color: var(--text-muted); }
+
+    .tournament-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .tournament-action {
+        color: var(--primary);
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+    }
+
+    
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+
+    .modal-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 600px;
+        padding: 2rem;
+        transform: translateY(-20px);
+        transition: transform 0.3s;
+    }
+
+    .modal-overlay.active .modal-content {
+        transform: translateY(0);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .stepper {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+
+    .stepper::before {
+        content: '';
+        position: absolute;
+        top: 15px;
+        left: 30px;
+        right: 30px;
+        height: 2px;
+        background: #e5e7eb;
+        z-index: 1;
+    }
+
+    .step {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        width: 33.33%;
+    }
+
+    .step-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: white;
+        border: 2px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: var(--text-muted);
+        transition: all 0.3s;
+    }
+
+    .step.active .step-circle {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: white;
+    }
+
+    .step.completed .step-circle {
+        border-color: #10b981;
+        background: #10b981;
+        color: white;
+    }
+
+    .step-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .step.active .step-label { color: var(--primary); }
+
+    .step-content {
+        display: none;
+    }
+
+    .step-content.active {
+        display: block;
+    }
+
+    .form-group { margin-bottom: 1rem; }
+    .form-label { display: block; font-size: 0.875rem; font-weight: 500; color: var(--dark); margin-bottom: 0.5rem; }
+    .form-control { width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; }
+
+    
+    .drop-zone {
+        border: 2px dashed #e5e7eb;
+        border-radius: 8px;
+        padding: 3rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .drop-zone:hover {
+        border-color: var(--primary);
+        background-color: rgba(114, 47, 55, 0.05);
+    }
+
+    .drop-zone-icon {
+        font-size: 2.5rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">Gestión de Torneos</h1>
+    <button class="btn-primary" onclick="openModal()">
+        <i class="ri-add-line"></i> Nuevo Torneo
+    </button>
 </div>
 
-<div class="card">
-    <h2>Información del Torneo</h2>
-    <form action="#" method="GET" style="margin-top: 1.5rem;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-            <div class="form-group">
-                <label class="form-label">Nombre del Torneo</label>
-                <input type="text" class="form-control" placeholder="Ej. Torneo Primavera 2026">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Sede Principal</label>
-                <select class="form-control">
-                    <option>Seleccionar Sede</option>
-                    <option>Cancha Principal UPQ</option>
-                    <option>Cancha Sur</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Fecha de Inicio</label>
-                <input type="date" class="form-control">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Fecha de Fin</label>
-                <input type="date" class="form-control">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Categoría</label>
-                <select class="form-control">
-                    <option>Libre</option>
-                    <option>Femenil</option>
-                    <option>Veteranos</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Cupo de Equipos</label>
-                <input type="number" class="form-control" placeholder="Ej. 16">
+<div class="tournaments-grid">
+    {% for torneo in torneos %}
+    <div class="tournament-card" onclick="if(!event.target.closest('button') && !event.target.closest('form') && !event.target.closest('.tournament-footer')) window.location.href='{{ url_for('torneos_bp.detalles_torneo', id=torneo.id) }}'" style="cursor:pointer;">
+        {% if torneo.reglamento_url %}
+            <img src="http://localhost:8001{{ torneo.reglamento_url }}" alt="Logo" class="tournament-logo">
+        {% else %}
+            <img src="https://images.unsplash.com/photo-1518605368461-1e1e38ce8058?auto=format&fit=crop&q=80&w=400&h=200" alt="Logo" class="tournament-logo">
+        {% endif %}
+        <div class="tournament-body">
+            <h3 class="tournament-title">{{ torneo.nombre }}</h3>
+            <div class="tournament-category">Categoría: {{ torneo.categoria_id or 'Libre' }} • {{ torneo.formato or 'Liga' }}</div>
+            <span class="tournament-status {% if torneo.estado == 'En Curso' %}status-active{% elif torneo.estado == 'planeado' %}status-planned{% else %}status-finished{% endif %}">{{ torneo.estado|capitalize }}</span>
+        </div>
+        <div class="tournament-footer" style="display:flex; justify-content:space-between; align-items:center;">
+            <button class="btn-secondary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;" onclick="openParticipantesModal({{ torneo.id }})">
+                <i class="ri-team-line"></i> Ver Participantes
+            </button>
+            <div style="display:flex; gap: 0.5rem;">
+                <button 
+                    data-id="{{ torneo.id }}" 
+                    data-nombre="{{ torneo.nombre }}"
+                    data-sede="{{ torneo.sede_id }}"
+                    data-categoria="{{ torneo.categoria_id or '' }}"
+                    data-formato="{{ torneo.formato or '' }}"
+                    data-inicio="{{ torneo.fecha_inicio }}"
+                    data-fin="{{ torneo.fecha_fin }}"
+                    data-cupo="{{ torneo.cupo_equipos }}"
+                    data-costo="{{ torneo.costo_inscripcion }}"
+                    data-estado="{{ torneo.estado }}"
+                    onclick="openEditModal(this)" 
+                    style="background:none; border:none; color:var(--primary); cursor:pointer; font-size:1.2rem;"
+                    title="Editar Torneo">
+                    <i class="ri-edit-box-line"></i>
+                </button>
+                <form action="{{ url_for('torneos_bp.eliminar_torneo', id=torneo.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Seguro que deseas eliminar este torneo? Se borrarán todos los datos asociados.');">
+                    <button type="submit" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:1.2rem;" title="Eliminar Torneo">
+                        <i class="ri-delete-bin-line"></i>
+                    </button>
+                </form>
             </div>
         </div>
-        
-        <div class="form-group" style="margin-top: 1rem;">
-            <label class="form-label">Reglas y Observaciones</label>
-            <textarea class="form-control" rows="4" placeholder="Escribe aquí las reglas adicionales..."></textarea>
-        </div>
-        
-        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
-            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancelar</a>
-            <button type="submit" class="btn btn-primary">Crear Torneo</button>
-        </div>
-    </form>
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted);">No hay torneos registrados.</p>
+    {% endfor %}
 </div>
 
-<div class="image-placeholder" style="margin-top: 2rem;">
-    [Espacio para Banner de Torneo (Opcional)]
+
+<div class="modal-overlay" id="torneoModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" style="margin:0;">Crear Torneo</h2>
+            <button style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);" onclick="closeModal()"><i class="ri-close-line"></i></button>
+        </div>
+        
+        <div class="stepper">
+            <div class="step active" id="step1-indicator">
+                <div class="step-circle">1</div>
+                <div class="step-label">Info Básica</div>
+            </div>
+            <div class="step" id="step2-indicator">
+                <div class="step-circle">2</div>
+                <div class="step-label">Configuración</div>
+            </div>
+            <div class="step" id="step3-indicator">
+                <div class="step-circle">3</div>
+                <div class="step-label">Reglamento</div>
+            </div>
+        </div>
+
+        <form id="torneoForm" action="{{ url_for('torneos_bp.crear_torneo') }}" method="POST" enctype="multipart/form-data">
+            
+            <div class="step-content active" id="step1">
+                <div class="form-group">
+                    <label class="form-label">Nombre del Torneo</label>
+                    <input type="text" name="nombre" class="form-control" placeholder="Ej. Torneo Primavera 2026" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sede</label>
+                    <select name="sede" class="form-control" required>
+                        <option value="">Seleccione una sede...</option>
+                        {% for sede in sedes %}
+                            <option value="{{ sede.id }}">{{ sede.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Categoría</label>
+                        <select name="categoria" class="form-control">
+                            <option value="">Ninguna</option>
+                            <option value="1">Libre</option>
+                            <option value="2">Femenil</option>
+                            <option value="3">Veteranos</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Formato</label>
+                        <select name="formato" class="form-control">
+                            <option value="liga">Liga</option>
+                            <option value="grupos_eliminatorias">Grupos y Eliminatorias</option>
+                            <option value="eliminatorias">Solo Eliminatorias</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; margin-top:2rem;">
+                    <button type="button" class="btn-primary" onclick="nextStep(2)">Siguiente <i class="ri-arrow-right-line"></i></button>
+                </div>
+            </div>
+
+            
+            <div class="step-content" id="step2">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Fecha Inicio</label>
+                        <input type="date" name="fecha_inicio" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fecha Fin</label>
+                        <input type="date" name="fecha_fin" class="form-control" required>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Cupo de Equipos</label>
+                        <input type="number" name="cupo_equipos" class="form-control" placeholder="16" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Costo de Inscripción ($)</label>
+                        <input type="number" name="costo_inscripcion" class="form-control" placeholder="0.00" step="0.01">
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:2rem;">
+                    <button type="button" class="btn-secondary" onclick="nextStep(1)">Atrás</button>
+                    <button type="button" class="btn-primary" onclick="nextStep(3)">Siguiente <i class="ri-arrow-right-line"></i></button>
+                </div>
+            </div>
+
+            
+            <div class="step-content" id="step3">
+                <div class="drop-zone" id="dropZoneTorneo" onclick="document.getElementById('fileInputTorneo').click()">
+                    <i class="ri-image-add-line drop-zone-icon" id="dropZoneIconTorneo"></i>
+                    <div id="dropZoneTextTorneo">Arrastra y suelta la imagen del torneo aquí<br>o haz clic para explorar (PNG, JPG, SVG)</div>
+                </div>
+                <input type="file" id="fileInputTorneo" name="reglamento" style="display:none;" accept="image/png, image/jpeg, image/svg+xml">
+                <div style="display:flex; justify-content:space-between; margin-top:2rem;">
+                    <button type="button" class="btn-secondary" onclick="nextStep(2)">Atrás</button>
+                    <button type="submit" class="btn-primary">Finalizar y Crear</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal() {
+        const form = document.getElementById('torneoForm');
+        form.reset();
+        form.action = "{{ url_for('torneos_bp.crear_torneo') }}";
+        document.querySelector('#torneoModal .modal-title').innerText = 'Crear Torneo';
+        document.querySelector('#torneoModal button[type="submit"]').innerText = 'Finalizar y Crear';
+        resetTorneoDropZone();
+        document.getElementById('torneoModal').classList.add('active');
+        nextStep(1); // Reset to step 1
+    }
+    
+    function openEditModal(btn) {
+        const form = document.getElementById('torneoForm');
+        form.reset();
+        form.action = `/editar_torneo/${btn.dataset.id}`;
+        document.querySelector('#torneoModal .modal-title').innerText = 'Editar Torneo';
+        document.querySelector('#torneoModal button[type="submit"]').innerText = 'Guardar Cambios';
+        
+        form.nombre.value = btn.dataset.nombre || '';
+        form.sede.value = btn.dataset.sede || '';
+        form.categoria.value = btn.dataset.categoria || '';
+        form.formato.value = btn.dataset.formato || '';
+        form.fecha_inicio.value = btn.dataset.inicio || '';
+        form.fecha_fin.value = btn.dataset.fin || '';
+        form.cupo_equipos.value = btn.dataset.cupo || '';
+        form.costo_inscripcion.value = btn.dataset.costo || '';
+        
+        // Include 'estado' if we want to change it via a hidden input, or just let it stay unchanged if not in form.
+        // I will add a hidden input for estado so it doesn't break. 
+        let estadoInput = form.querySelector('input[name="estado"]');
+        if (!estadoInput) {
+            estadoInput = document.createElement('input');
+            estadoInput.type = 'hidden';
+            estadoInput.name = 'estado';
+            form.appendChild(estadoInput);
+        }
+        estadoInput.value = btn.dataset.estado || '';
+        
+        document.getElementById('torneoModal').classList.add('active');
+        resetTorneoDropZone();
+        nextStep(1); // Reset to step 1
+    }
+    
+    function closeModal() {
+        document.getElementById('torneoModal').classList.remove('active');
+    }
+
+    function nextStep(step) {
+        // Update Indicators
+        for(let i=1; i<=3; i++) {
+            let indicator = document.getElementById(`step${i}-indicator`);
+            indicator.classList.remove('active', 'completed');
+            if (i < step) indicator.classList.add('completed');
+            if (i === step) indicator.classList.add('active');
+            
+            // Update content visibility
+            document.getElementById(`step${i}`).classList.remove('active');
+        }
+        document.getElementById(`step${step}`).classList.add('active');
+    }
+
+    // Drag and Drop Logic
+    const dropZone = document.getElementById('dropZoneTorneo');
+    const fileInput = document.getElementById('fileInputTorneo');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--primary)';
+        dropZone.style.backgroundColor = 'rgba(114, 47, 55, 0.05)';
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.style.borderColor = '#e5e7eb';
+        dropZone.style.backgroundColor = 'transparent';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#e5e7eb';
+        dropZone.style.backgroundColor = 'transparent';
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            updateTorneoDropZone(fileInput);
+        }
+    });
+
+    fileInput.addEventListener('change', () => updateTorneoDropZone(fileInput));
+
+    function updateTorneoDropZone(input) {
+        if (input.files && input.files.length) {
+            document.getElementById('dropZoneIconTorneo').className = 'ri-check-line drop-zone-icon';
+            document.getElementById('dropZoneIconTorneo').style.color = '#10b981';
+            document.getElementById('dropZoneTextTorneo').innerHTML = 'Imagen seleccionada:<br><strong>' + input.files[0].name + '</strong>';
+        }
+    }
+
+    function resetTorneoDropZone() {
+        if(fileInput) fileInput.value = '';
+        document.getElementById('dropZoneIconTorneo').className = 'ri-image-add-line drop-zone-icon';
+        document.getElementById('dropZoneIconTorneo').style.color = 'var(--text-muted)';
+        document.getElementById('dropZoneTextTorneo').innerHTML = 'Arrastra y suelta la imagen del torneo aquí<br>o haz clic para explorar (PNG, JPG, SVG)';
+    }
+
+    // Participantes Modal Logic
+    function openParticipantesModal(torneoId) {
+        document.getElementById('participantesModal').classList.add('active');
+        fetch(`/admin/torneos/${torneoId}/participantes`)
+            .then(res => res.json())
+            .then(data => {
+                populateEquiposTable('equiposBody', data.equipos);
+                populateTable('arbitrosBody', data.arbitros);
+            })
+            .catch(err => {
+                console.error("Error fetching participants:", err);
+                alert("Error al obtener participantes.");
+            });
+    }
+
+    function closeParticipantesModal() {
+        document.getElementById('participantesModal').classList.remove('active');
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+        document.getElementById(`content-${tabId}`).classList.add('active');
+    }
+
+    function populateEquiposTable(tbodyId, dataArray) {
+        const tbody = document.getElementById(tbodyId);
+        tbody.innerHTML = '';
+        if (!dataArray || dataArray.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem; color: #9ca3af;">No hay equipos inscritos.</td></tr>`;
+            return;
+        }
+        dataArray.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 1rem; border-bottom: 1px solid #e5e7eb;">${item.id}</td>
+                <td style="padding: 1rem; border-bottom: 1px solid #e5e7eb; font-weight: bold;">
+                    ${item.escudo_url ? `<img src="${item.escudo_url}" width="30" height="30" style="border-radius:50%; vertical-align:middle; margin-right:8px;" />` : ''}
+                    ${item.nombre}
+                </td>
+                <td style="padding: 1rem; border-bottom: 1px solid #e5e7eb;">${item.entrenador ? item.entrenador.nombre : 'Sin Entrenador'}</td>
+                <td style="padding: 1rem; border-bottom: 1px solid #e5e7eb;"><span class="tournament-status status-active">${item.estado_inscripcion}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function populateTable(tbodyId, dataArray) {
+        const tbody = document.getElementById(tbodyId);
+        tbody.innerHTML = '';
+        if (dataArray.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem; color: #9ca3af;">No hay registros.</td></tr>`;
+            return;
+        }
+        dataArray.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 1rem; border-bottom: 1px solid #e5e7eb;">${item.id}</td>
+                <td style="padding: 1rem; border-bottom: 1px solid #e5e7eb;">${item.nombre}</td>
+                <td style="padding: 1rem; border-bottom: 1px solid #e5e7eb;">${item.correo}</td>
+                <td style="padding: 1rem; border-bottom: 1px solid #e5e7eb;">${item.telefono || 'N/A'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+</script>
+
+
+<div class="modal-overlay" id="participantesModal">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+            <h2 class="modal-title" style="margin:0;">Participantes del Torneo</h2>
+            <button style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);" onclick="closeParticipantesModal()"><i class="ri-close-line"></i></button>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; border-bottom: 2px solid #e5e7eb; margin-bottom: 1rem;">
+            <button class="tab-btn active" id="tab-equipos" onclick="switchTab('equipos')" style="background:none; border:none; padding: 0.5rem 1rem; cursor:pointer; font-weight:600;">Equipos</button>
+            <button class="tab-btn" id="tab-arbitros" onclick="switchTab('arbitros')" style="background:none; border:none; padding: 0.5rem 1rem; cursor:pointer; font-weight:600;">Árbitros</button>
+        </div>
+        
+        <div id="content-equipos" class="tab-content active" style="max-height: 400px; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead style="background: #f9fafb;"><tr><th style="padding: 1rem; text-align: left;">Equipo</th><th style="padding: 1rem; text-align: left;">Entrenador</th><th style="padding: 1rem; text-align: left;">Estado</th></tr></thead>
+                <tbody id="equiposBody"></tbody>
+            </table>
+        </div>
+        
+        <div id="content-arbitros" class="tab-content" style="max-height: 400px; overflow-y: auto; display: none;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead style="background: #f9fafb;"><tr><th style="padding: 1rem; text-align: left;">Nombre</th><th style="padding: 1rem; text-align: left;">Correo</th><th style="padding: 1rem; text-align: left;">Teléfono</th></tr></thead>
+                <tbody id="arbitrosBody"></tbody>
+            </table>
+        </div>
+        
+        <style>
+            .tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+            .tab-content { display: none; }
+            .tab-content.active { display: block !important; }
+        </style>
+    </div>
 </div>
 {% endblock %}

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, SmallInteger, String, Boolean, ForeignKey, Numeric, Date, Time, DateTime
+from sqlalchemy import Column, Integer, SmallInteger, String, Boolean, ForeignKey, Numeric, Date, Time, DateTime, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from db.database import Base
@@ -80,6 +80,13 @@ class Sede(Base):
     direccion = Column(String(255), nullable=False)
     activa = Column(Boolean, default=True, nullable=False)
     creado_en = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    telefono = Column(String(20))
+    ciudad = Column(String(100))
+    cantidad_canchas = Column(Integer, default=1)
+    horario_apertura = Column(Time)
+    horario_cierre = Column(Time)
+    foto_url = Column(String(255))
+    amenidades = Column(Text)
 
     admin = relationship('Usuario', back_populates='sedes_administradas')
     canchas = relationship('Cancha', back_populates='sede', cascade="all, delete-orphan")
@@ -164,6 +171,9 @@ class Torneo(Base):
     fecha_inicio = Column(Date, nullable=False)
     fecha_fin = Column(Date, nullable=False)
     creado_en = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    formato = Column(String(50))
+    costo_inscripcion = Column(Numeric(10, 2))
+    reglamento_url = Column(String(255))
 
     sede = relationship('Sede', back_populates='torneos')
     admin = relationship('Usuario', back_populates='torneos_administrados')
