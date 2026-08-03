@@ -37,9 +37,15 @@ app = FastAPI(
     version="1.0.0",
 )
 
+origins = [
+    "http://localhost",
+    "http://localhost:8080",
+    "http://18.225.226.101",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,7 +55,6 @@ UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-# Registrar routers
 app.include_router(administrativos.router)
 app.include_router(arbitros.router)
 app.include_router(entrenadores.router)
