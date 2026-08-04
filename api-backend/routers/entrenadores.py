@@ -41,17 +41,41 @@ def get_mis_equipos(db: Session = Depends(get_db), current_entrenador: models.Us
 
 @router.get("/sedes")
 def get_sedes(db: Session = Depends(get_db), current_entrenador: models.Usuario = Depends(get_current_entrenador)):
-    sedes = db.query(models.Sede).filter(models.Sede.estado == 'activa').all()
-    return [{"id": s.id, "nombre": s.nombre, "direccion": s.direccion, "foto_url": s.foto_url} for s in sedes]
+    sedes = db.query(models.Sede).filter(models.Sede.activa == True).all()
+    return [{
+        "id": s.id,
+        "nombre": s.nombre,
+        "direccion": s.direccion,
+        "ciudad": s.ciudad,
+        "telefono": s.telefono,
+        "cantidad_canchas": s.cantidad_canchas,
+        "foto_url": s.foto_url
+    } for s in sedes]
 
 @router.get("/sedes/{sede_id}/torneos")
 def get_sede_torneos(sede_id: int, db: Session = Depends(get_db), current_entrenador: models.Usuario = Depends(get_current_entrenador)):
+    sede = db.query(models.Sede).filter(models.Sede.id == sede_id).first()
+    if not sede:
+        raise HTTPException(status_code=404, detail="Sede no encontrada")
     torneos = db.query(models.Torneo).filter(models.Torneo.sede_id == sede_id).all()
-    return [{"id": t.id, "nombre": t.nombre, "fecha_inicio": t.fecha_inicio, "cupo_equipos": t.cupo_equipos, "costo_inscripcion": t.costo_inscripcion} for t in torneos]
+    return {
+        "sede": {"id": sede.id, "nombre": sede.nombre},
+        "torneos": [{
+            "id": t.id,
+            "nombre": t.nombre,
+            "fecha_inicio": t.fecha_inicio,
+            "fecha_fin": t.fecha_fin,
+            "cupo_equipos": t.cupo_equipos,
+            "costo_inscripcion": t.costo_inscripcion,
+            "estado": t.estado
+        } for t in torneos]
+    }
 
 @router.post("/torneos/{torneo_id}/inscribir")
 def inscribir_torneo(torneo_id: int, request_data: dict, db: Session = Depends(get_db), current_entrenador: models.Usuario = Depends(get_current_entrenador)):
     equipo_id = request_data.get("equipo_id")
+    if not equipo_id:
+        raise HTTPException(status_code=400, detail="Equipo_id es requerido")
     equipo = db.query(models.Equipo).filter(models.Equipo.id == equipo_id, models.Equipo.entrenador_id == current_entrenador.id).first()
     if not equipo:
         raise HTTPException(status_code=404, detail="Equipo no encontrado")
@@ -82,8 +106,55 @@ def get_proximo_partido(equipo_id: int, db: Session = Depends(get_db), current_e
         "condicion": "Local" if partido.equipo_local_id == equipo_id else "Visitante",
         "fecha": partido.fecha_hora.strftime("%d/%m/%Y"),
         "hora": partido.fecha_hora.strftime("%H:%M"),
-        "cancha": partido.cancha.nombre if partido.cancha else "Por definir"
+        "fecha_hora": partido.fecha_hora.isoformat(),
+        "estado": partido.estado,
+        "cancha": partido.cancha.nombre if partido.cancha else "Por definir",
+        "sede": partido.cancha.sede.nombre if partido.cancha and partido.cancha.sede else None,
+        "arbitro": partido.arbitro.usuario.nombre if partido.arbitro and partido.arbitro.usuario else None
     }
+
+@router.post("/equipos/{equipo_id}/alineacion")
+def guardar_alineacion(equipo_id: int, request_data: dict, db: Session = Depends(get_db), current_entrenador: models.Usuario = Depends(get_current_entrenador)):
+    equipo = db.query(models.Equipo).filter(models.Equipo.id == equipo_id, models.Equipo.entrenador_id == current_entrenador.id).first()
+    if not equipo:
+        raise HTTPException(status_code=404, detail="Equipo no encontrado")
+
+    partido = db.query(models.Partido).filter(
+        or_(models.Partido.equipo_local_id == equipo_id, models.Partido.equipo_visita_id == equipo_id),
+        models.Partido.fecha_hora >= datetime.now()
+    ).order_by(models.Partido.fecha_hora.asc()).first()
+
+    if not partido:
+        raise HTTPException(status_code=404, detail="No hay un partido próximo para este equipo")
+
+    existing = db.query(models.Alineacion).filter(
+        models.Alineacion.partido_id == partido.id,
+        models.Alineacion.equipo_id == equipo_id
+    ).first()
+    if existing:
+        db.delete(existing)
+        db.flush()
+
+    alineacion = models.Alineacion(
+        partido_id=partido.id,
+        equipo_id=equipo_id,
+        entrenador_id=current_entrenador.id,
+        formacion=request_data.get("formacion")
+    )
+    db.add(alineacion)
+    db.flush()
+
+    for jugador in request_data.get("jugadores", []):
+        db.add(models.AlineacionJugador(
+            alineacion_id=alineacion.id,
+            jugador_id=jugador.get("jugador_id"),
+            posicion=jugador.get("posicion", ""),
+            es_titular=jugador.get("es_titular", True),
+            numero_dorsal=jugador.get("numero_dorsal")
+        ))
+
+    db.commit()
+    return {"message": "Alineación guardada exitosamente"}
 
 @router.get("/equipos/{equipo_id}/partidos")
 def get_equipo_partidos(equipo_id: int, db: Session = Depends(get_db), current_entrenador: models.Usuario = Depends(get_current_entrenador)):
@@ -93,10 +164,17 @@ def get_equipo_partidos(equipo_id: int, db: Session = Depends(get_db), current_e
     
     return [{
         "id": p.id,
+        "equipo_local": p.equipo_local.nombre if p.equipo_local else None,
+        "equipo_visita": p.equipo_visita.nombre if p.equipo_visita else None,
         "rival": p.equipo_visita.nombre if p.equipo_local_id == equipo_id else p.equipo_local.nombre,
         "resultado": f"{p.goles_local} - {p.goles_visita}" if p.estado == "finalizado" else "Por jugar",
         "condicion": "Local" if p.equipo_local_id == equipo_id else "Visitante",
-        "fecha": p.fecha_hora.strftime("%d/%m/%Y")
+        "fecha": p.fecha_hora.strftime("%d/%m/%Y"),
+        "fecha_hora": p.fecha_hora.isoformat(),
+        "cancha": p.cancha.nombre if p.cancha else "Por definir",
+        "sede": p.cancha.sede.nombre if p.cancha and p.cancha.sede else None,
+        "arbitro": p.arbitro.usuario.nombre if p.arbitro and p.arbitro.usuario else None,
+        "estado": p.estado
     } for p in partidos]
 
 @router.get("/equipos/{equipo_id}/solicitudes")
@@ -107,6 +185,7 @@ def get_equipo_solicitudes(equipo_id: int, db: Session = Depends(get_db), curren
     ).all()
     return [{
         "id": s.id,
+        "solicitud_id": s.id,
         "jugador_id": s.jugador_id,
         "nombre": s.jugador.usuario.nombre if s.jugador and s.jugador.usuario else "Desconocido",
         "posicion": s.jugador.posicion if s.jugador else None,
@@ -115,7 +194,12 @@ def get_equipo_solicitudes(equipo_id: int, db: Session = Depends(get_db), curren
     } for s in solicitudes]
 
 @router.put("/solicitudes/{solicitud_id}")
-def responder_solicitud(solicitud_id: int, estado: str, dorsal: int = 0, db: Session = Depends(get_db), current_entrenador: models.Usuario = Depends(get_current_entrenador)):
+def responder_solicitud(solicitud_id: int, request_data: dict, db: Session = Depends(get_db), current_entrenador: models.Usuario = Depends(get_current_entrenador)):
+    estado = request_data.get("estado")
+    dorsal = request_data.get("dorsal", 0)
+    if not estado:
+        raise HTTPException(status_code=400, detail="Estado es requerido")
+
     solicitud = db.query(models.SolicitudEquipo).filter(models.SolicitudEquipo.id == solicitud_id).first()
     if not solicitud:
         raise HTTPException(status_code=404, detail="Solicitud no encontrada")
@@ -145,7 +229,7 @@ def get_equipo_jugadores(equipo_id: int, db: Session = Depends(get_db), current_
         "nombre": m.jugador.usuario.nombre,
         "dorsal": m.numero_dorsal,
         "posicion": m.jugador.posicion,
-        "foto_url": m.jugador.usuario.foto_url,
+        "foto_url": getattr(m.jugador.usuario, 'foto_url', None),
         "goles": 0,
         "asistencias": 0,
         "amarillas": 0,

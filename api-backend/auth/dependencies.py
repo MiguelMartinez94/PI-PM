@@ -41,6 +41,6 @@ def require_role(required_role_id: int):
 
 
 get_current_admin = require_role(1)
-get_current_jugador = require_role(2)
-get_current_arbitro = require_role(3)
+get_current_jugador = require_role(3)
+get_current_arbitro = require_role(2)
 get_current_entrenador = require_role(4)

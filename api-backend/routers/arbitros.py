@@ -22,6 +22,7 @@ def get_mis_partidos(db: Session = Depends(get_db), current_arbitro: models.Usua
             "sede": p.torneo.sede.nombre if p.torneo and p.torneo.sede else "Por definir",
             "fecha": p.fecha_hora.strftime("%d/%m/%Y"),
             "hora": p.fecha_hora.strftime("%H:%M"),
+            "fecha_hora": p.fecha_hora.isoformat(),
             "estado": p.estado,
             "estado_arbitro": p.estado_arbitro,
             "goles_local": p.goles_local,
@@ -115,16 +116,26 @@ def get_partido_jugadores(partido_id: int, db: Session = Depends(get_db), curren
         raise HTTPException(status_code=404, detail="Partido no encontrado")
     
     def format_equipo(equipo):
-        if not equipo: return []
+        if not equipo:
+            return {"equipo_id": None, "nombre": "Por definir", "jugadores": []}
         jugadores = db.query(models.EquipoJugador).filter(
             models.EquipoJugador.equipo_id == equipo.id,
             models.EquipoJugador.estado == 'activo'
         ).all()
-        return [{"id": j.jugador_id, "nombre": j.jugador.usuario.nombre, "dorsal": j.numero_dorsal, "foto_url": j.jugador.usuario.foto_url} for j in jugadores if j.jugador and j.jugador.usuario]
+        return {
+            "equipo_id": equipo.id,
+            "nombre": equipo.nombre,
+            "jugadores": [{
+                "id": j.jugador_id,
+                "nombre": j.jugador.usuario.nombre,
+                "dorsal": j.numero_dorsal,
+                "foto_url": j.jugador.usuario.foto_url
+            } for j in jugadores if j.jugador and j.jugador.usuario]
+        }
         
     return {
-        "equipo_local": format_equipo(p.equipo_local),
-        "equipo_visita": format_equipo(p.equipo_visita)
+        "local": format_equipo(p.equipo_local),
+        "visita": format_equipo(p.equipo_visita)
     }
 
 @router.get("/partido/{partido_id}/estadisticas")
@@ -136,18 +147,32 @@ def get_partido_estadisticas(partido_id: int, db: Session = Depends(get_db), cur
     eventos = db.query(models.EventoPartido).filter(models.EventoPartido.partido_id == partido_id).order_by(models.EventoPartido.minuto.desc()).all()
     
     return {
-        "partido": {
-            "goles_local": p.goles_local,
-            "goles_visita": p.goles_visita,
-            "estado": p.estado
+        "marcador": {
+            "local": p.goles_local,
+            "visita": p.goles_visita
+        },
+        "estadisticas": {
+            "local": {
+                "tiros": 0,
+                "tiros_esquina": 0,
+                "faltas": 0,
+                "amarillas": 0,
+                "rojas": 0
+            },
+            "visita": {
+                "tiros": 0,
+                "tiros_esquina": 0,
+                "faltas": 0,
+                "amarillas": 0,
+                "rojas": 0
+            }
         },
         "eventos": [{
             "id": e.id,
-            "tipo_evento": e.tipo_evento,
+            "tipo": e.tipo_evento,
             "minuto": e.minuto,
-            "equipo_id": e.equipo_id,
-            "detalle": e.detalle,
-            "jugador_nombre": e.jugador.usuario.nombre if e.jugador else None
+            "equipo": e.equipo.nombre if e.equipo else None,
+            "jugador": e.jugador.usuario.nombre if e.jugador else None
         } for e in eventos]
     }
 

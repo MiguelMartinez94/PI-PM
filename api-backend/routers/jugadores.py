@@ -104,7 +104,7 @@ def get_mi_equipo(db: Session = Depends(get_db), current_jugador: models.Usuario
                 "nombre": j.jugador.usuario.nombre,
                 "dorsal": j.numero_dorsal,
                 "posicion": j.jugador.posicion,
-                "foto_url": j.jugador.usuario.foto_url
+                "foto_url": getattr(j.jugador.usuario, 'foto_url', None)
             } for j in jugadores if j.jugador and j.jugador.usuario]
         }
     }
