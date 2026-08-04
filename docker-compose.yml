@@ -1,8 +1,7 @@
 version: '3.8'
 
 services:
-  # --- CLONES DEL BACKEND (API) ---
-  api-backend-1:
+  api-backend:
     build:
       context: ./api-backend
     ports:
@@ -12,18 +11,7 @@ services:
     volumes:
       - ./api-backend:/app
 
-  api-backend-2:
-    build:
-      context: ./api-backend
-    ports:
-      - "8002:8000"
-    environment:
-      - DATABASE_URL=postgresql://neondb_owner:npg_j5GMCDdNE0Uu@ep-super-breeze-axu8gq3l-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-    volumes:
-      - ./api-backend:/app
-
-  # --- CLONES DEL FRONTEND (ADMIN WEB) ---
-  admin-web-1:
+  admin-web:
     build:
       context: ./admin-web
     ports:
@@ -35,25 +23,8 @@ services:
     volumes:
       - ./admin-web:/app
     depends_on:
-      - api-backend-1
-      - api-backend-2
+      - api-backend
 
-  admin-web-2:
-    build:
-      context: ./admin-web
-    ports:
-      - "5002:5000"
-    environment:
-      - FASTAPI_URL=http://api-backend:8000
-      - FLASK_ENV=development
-      - FLASK_DEBUG=1
-    volumes:
-      - ./admin-web:/app
-    depends_on:
-      - api-backend-1
-      - api-backend-2
-
-  # --- APLICACIÓN MÓVIL ---
   mobile-app:
     build:
       context: ./mobile-app
@@ -66,10 +37,8 @@ services:
       - ./mobile-app:/app
       - /app/node_modules
     depends_on:
-      - api-backend-1
-      - api-backend-2
+      - api-backend
 
-  # --- PROXY Y BALANCEADOR DE CARGA ---
   haproxy_proxy:
     image: haproxy:2.9-alpine
     ports:
@@ -80,12 +49,9 @@ services:
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     depends_on:
-      - admin-web-1
-      - admin-web-2
-      - api-backend-1
-      - api-backend-2
+      - admin-web
+      - api-backend
 
-  # --- HERRAMIENTAS DE MONITOREO ---
   prometheus:
     image: prom/prometheus:latest
     ports:
