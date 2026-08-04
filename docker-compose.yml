@@ -78,9 +78,25 @@ services:
       - "8090:8090"
       - "8404:8404"
       - "8405:8405"
+    environment:
+      - HAPROXY_CERT_CN=${HAPROXY_CERT_CN:-localhost}
+    command:
+      - sh
+      - -c
+      - |
+        apk add --no-cache openssl &&
+        mkdir -p /usr/local/etc/haproxy/certs &&
+        if [ ! -f /usr/local/etc/haproxy/certs/haproxy.pem ]; then
+          openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout /usr/local/etc/haproxy/certs/haproxy.key \
+            -out /usr/local/etc/haproxy/certs/haproxy.crt \
+            -subj "/CN=${HAPROXY_CERT_CN:-localhost}";
+          cat /usr/local/etc/haproxy/certs/haproxy.key /usr/local/etc/haproxy/certs/haproxy.crt > /usr/local/etc/haproxy/certs/haproxy.pem;
+        fi &&
+        haproxy -f /usr/local/etc/haproxy/haproxy.cfg
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-      - ./haproxy/certs:/usr/local/etc/haproxy/certs:ro # Recuperamos tu carpeta de certificados SSL
+      - ./haproxy/certs:/usr/local/etc/haproxy/certs
     depends_on:
       - admin-web-1
       - admin-web-2
