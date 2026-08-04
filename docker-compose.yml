@@ -1,6 +1,7 @@
 version: '3.8'
 services:
-  api-backend:
+  # --- CLONES DEL BACKEND (API) ---
+  api-backend-1:
     build:
       context: ./api-backend
     ports:
@@ -10,7 +11,18 @@ services:
     volumes:
       - ./api-backend:/app
 
-  admin-web:
+  api-backend-2:
+    build:
+      context: ./api-backend
+    ports:
+      - "8002:8000" # Puerto externo distinto para evitar choques
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    volumes:
+      - ./api-backend:/app
+
+  # --- CLONES DEL FRONTEND (ADMIN WEB) ---
+  admin-web-1:
     build:
       context: ./admin-web
     ports:
@@ -22,8 +34,25 @@ services:
     volumes:
       - ./admin-web:/app
     depends_on:
-      - api-backend
+      - api-backend-1
+      - api-backend-2
 
+  admin-web-2:
+    build:
+      context: ./admin-web
+    ports:
+      - "5002:5000" # Puerto externo distinto
+    environment:
+      - FASTAPI_URL=${FASTAPI_URL}
+      - FLASK_ENV=${FLASK_ENV}
+      - FLASK_DEBUG=${FLASK_DEBUG}
+    volumes:
+      - ./admin-web:/app
+    depends_on:
+      - api-backend-1
+      - api-backend-2
+
+  # --- APLICACIÓN MÓVIL ---
   mobile-app:
     build:
       context: ./mobile-app
@@ -37,8 +66,10 @@ services:
       - ./mobile-app:/app
       - /app/node_modules
     depends_on:
-      - api-backend
+      - api-backend-1
+      - api-backend-2
 
+  # --- PROXY Y BALANCEADOR DE CARGA ---
   haproxy_proxy:
     image: haproxy:2.9-alpine
     ports:
@@ -49,10 +80,14 @@ services:
       - "8405:8405"
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./haproxy/certs:/usr/local/etc/haproxy/certs:ro # Recuperamos tu carpeta de certificados SSL
     depends_on:
-      - admin-web
-      - api-backend
+      - admin-web-1
+      - admin-web-2
+      - api-backend-1
+      - api-backend-2
 
+  # --- HERRAMIENTAS DE MONITOREO ---
   prometheus:
     image: prom/prometheus:latest
     ports:
