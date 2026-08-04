@@ -11,8 +11,6 @@ services:
       - DATABASE_URL=postgresql://neondb_owner:npg_j5GMCDdNE0Uu@ep-super-breeze-axu8gq3l-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
     volumes:
       - ./api-backend:/app
-    depends_on:
-      - db
 
   api-backend-2:
     build:
@@ -23,8 +21,6 @@ services:
       - DATABASE_URL=postgresql://neondb_owner:npg_j5GMCDdNE0Uu@ep-super-breeze-axu8gq3l-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
     volumes:
       - ./api-backend:/app
-    depends_on:
-      - db
 
   # --- CLONES DEL FRONTEND (ADMIN WEB) ---
   admin-web-1:
