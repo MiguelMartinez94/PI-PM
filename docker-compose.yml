@@ -6,11 +6,9 @@ services:
     ports:
       - "8001:8000"
     environment:
-      - DATABASE_URL=postgresql://neondb_owner:npg_j5GMCDdNE0Uu@ep-super-breeze-axu8gq3l-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      - DATABASE_URL=${DATABASE_URL}
     volumes:
       - ./api-backend:/app
-    depends_on:
-      - db
 
   admin-web:
     build:
@@ -18,9 +16,9 @@ services:
     ports:
       - "5001:5000"
     environment:
-      - FASTAPI_URL=http://api-backend:8000
-      - FLASK_ENV=development
-      - FLASK_DEBUG=1
+      - FASTAPI_URL=${FASTAPI_URL}
+      - FLASK_ENV=${FLASK_ENV}
+      - FLASK_DEBUG=${FLASK_DEBUG}
     volumes:
       - ./admin-web:/app
     depends_on:
@@ -32,8 +30,9 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - EXPO_USE_V2_RESOLVER=1
-      - REACT_NATIVE_PACKAGER_HOSTNAME=192.168.1.27
+      - EXPO_USE_V2_RESOLVER=${EXPO_USE_V2_RESOLVER}
+      - REACT_NATIVE_PACKAGER_HOSTNAME=${REACT_NATIVE_PACKAGER_HOSTNAME}
+      - EXPO_PUBLIC_API_BASE_URL=${EXPO_PUBLIC_API_BASE_URL}
     volumes:
       - ./mobile-app:/app
       - /app/node_modules
@@ -69,6 +68,6 @@ services:
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
     depends_on:
       - prometheus
